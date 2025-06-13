@@ -2,7 +2,7 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 4.0"
+      version = "~> 5.0"
     }
   }
 }
@@ -27,7 +27,7 @@ resource "cloudflare_workers_kv_namespace" "status" {
 }
 
 # Create the Worker script
-resource "cloudflare_worker_script" "doi_checker" {
+resource "cloudflare_workers_script" "doi_checker" {
   account_id = var.cloudflare_account_id
   name       = var.worker_name
   content    = file("${path.module}/../src/worker.js")
@@ -84,7 +84,7 @@ resource "cloudflare_worker_script" "doi_checker" {
 }
 
 # Create a custom domain route (optional)
-resource "cloudflare_worker_route" "doi_checker" {
+resource "cloudflare_workers_route" "doi_checker" {
   count       = var.custom_domain_enabled ? 1 : 0
   zone_id     = var.custom_domain_zone_id
   pattern     = var.custom_domain_pattern
@@ -92,10 +92,10 @@ resource "cloudflare_worker_route" "doi_checker" {
 }
 
 # Create cron trigger for scheduled checks
-resource "cloudflare_worker_cron_trigger" "daily_check" {
+resource "cloudflare_workers_cron_trigger" "daily_check" {
   account_id  = var.cloudflare_account_id
   script_name = cloudflare_worker_script.doi_checker.name
-  cron        = var.cron_schedule
+  schedules        = var.cron_schedules
 }
 
 # Outputs
