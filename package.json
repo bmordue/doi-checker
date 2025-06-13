@@ -1,0 +1,20 @@
+{
+  "name": "doi-checker",
+  "version": "1.0.0",
+  "description": "Serverless DOI link checker with ActivityPub notifications",
+  "main": "src/worker.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "deploy": "./scripts/deploy.sh",
+    "dev": "wrangler dev src/worker.js"
+  },
+  "keywords": ["doi", "link-checker", "activitypub", "cloudflare-workers"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "jest": "^29.0.0",
+    "wrangler": "^3.0.0"
+  }
+}
