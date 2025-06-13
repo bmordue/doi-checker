@@ -17,10 +17,10 @@ variable "worker_name" {
   default     = "doi-checker"
 }
 
-variable "cron_schedules" {
+variable "cron_schedule" {
   description = "Cron schedule for DOI checks (in cron format)"
-  type        = list(string)
-  default     = ["0 9 * * *"]  # Daily at 9 AM UTC
+  type        = string
+  default     = "0 9 * * *"  # Daily at 9 AM UTC
 }
 
 variable "kv_namespace_dois" {
