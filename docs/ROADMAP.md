@@ -5,10 +5,10 @@
 2. ✅ Create project setup script
 3. ✅ Run project setup script to create directory structure
 4. ✅ Initialize git repository and make initial commit
-5. Set up Cloudflare account and get API credentials
-6. Configure Terraform variables (`terraform/terraform.tfvars`)
-7. Test Terraform configuration with `terraform plan`
-8. Deploy initial infrastructure with `terraform apply`
+5. ✅ Set up Cloudflare account and get API credentials
+6. ✅ Configure Terraform variables (`terraform/terraform.tfvars`)
+7. ✅ Test Terraform configuration with `terraform plan`
+8. ✅ Deploy initial infrastructure with `terraform apply`
 
 ## Phase 2: Core Worker Implementation
 9. Refactor worker code into modular structure (`src/worker.js`)
@@ -76,13 +76,15 @@
 
 ---
 
-## Current Status: Phase 1 (Task 3)
+## Current Status: Phase 2 (Task 9)
 
 ### Next Immediate Tasks:
-- [ ] Run the project setup script
-- [ ] Initialize git repository
-- [ ] Set up Cloudflare credentials
-- [ ] Configure Terraform variables
+- [ ] Refactor worker code into modular structure (`src/worker.js`)
+- [ ] Implement DOI validation utility (`src/lib/doi-validator.js`)
+- [ ] Implement DOI checking logic (`src/lib/checker.js`)
+- [ ] Create configuration constants (`src/config/constants.js`)
+- [ ] Set up basic error handling and logging
+- [ ] Test worker deployment and basic endpoints
 
 ### Success Criteria for MVP (Tasks 1-26):
 - [ ] DOI links are checked automatically on schedule
