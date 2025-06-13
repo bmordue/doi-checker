@@ -32,6 +32,7 @@ resource "cloudflare_workers_script" "doi_checker" {
   # name       = var.worker_name
   content    = file("${path.module}/../src/worker.js")
   script_name = var.worker_name
+  main_module = "worker.js"
 
 
   # Add environment variables for snac2 configuration
