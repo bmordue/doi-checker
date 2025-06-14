@@ -1,9 +1,19 @@
-// DOI Checker Cloudflare Worker
+/**
+ * DOI Checker Cloudflare Worker
+ * Main entry point for handling requests and scheduled events
+ */
+
+import { isValidDOI, validateDOI } from './lib/doi-validator.js';
+import { checkSingleDOI, checkMultipleDOIs, processResults } from './lib/checker.js';
+import { postBrokenDOIsToActivityPub } from './lib/activitypub.js';
+import { DOI_CONFIG } from './config/constants.js';
+
 export default {
+  // Handle HTTP requests
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     
-    // Simple API endpoints
+    // API endpoints
     if (url.pathname === '/add-doi' && request.method === 'POST') {
       return await addDOI(request, env);
     }
@@ -20,47 +30,53 @@ export default {
       return await getStatus(env);
     }
     
+    // Default response - API documentation
     return new Response('DOI Checker API\n/add-doi (POST)\n/remove-doi (POST)\n/check-now (POST)\n/status (GET)', {
       status: 200
     });
   },
   
-  // Cron trigger for scheduled checks
+  // Handle scheduled events
   async scheduled(event, env, ctx) {
     await checkAllDOIs(env);
   }
 };
 
-// Main checking function
+/**
+ * Main checking function to check all DOIs
+ * @param {Object} env - Environment variables and bindings
+ * @returns {Promise<Response>} - API response
+ */
 async function checkAllDOIs(env) {
   try {
     // Get list of DOIs to check
-    const doiListJson = await env.DOIS.get('doi-list');
+    const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
     if (!doiListJson) {
       console.log('No DOIs to check');
       return new Response('No DOIs configured', { status: 200 });
     }
     
     const doiList = JSON.parse(doiListJson);
-    const results = [];
-    const newlyBroken = [];
     
-    // Check each DOI
+    // Get previous statuses for comparison
+    const previousStatuses = {};
     for (const doi of doiList) {
-      const result = await checkSingleDOI(doi);
-      results.push(result);
-      
-      // Compare with previous status
-      const previousStatusJson = await env.STATUS.get(doi);
-      const previousStatus = previousStatusJson ? JSON.parse(previousStatusJson) : null;
-      
-      // If it was working before but is broken now, it's newly broken
-      if (previousStatus?.working && !result.working) {
-        newlyBroken.push(doi);
+      const statusJson = await env.STATUS.get(doi);
+      if (statusJson) {
+        previousStatuses[doi] = JSON.parse(statusJson);
       }
-      
-      // Update status in KV
-      await env.STATUS.put(doi, JSON.stringify({
+    }
+    
+    // Check all DOIs
+    const results = await checkMultipleDOIs(doiList);
+    
+    // Process results to find newly broken DOIs
+    const processedResults = processResults(results, previousStatuses);
+    const newlyBroken = processedResults.newlyBroken;
+    
+    // Update status in KV for each DOI
+    for (const result of results) {
+      await env.STATUS.put(result.doi, JSON.stringify({
         lastCheck: new Date().toISOString(),
         working: result.working,
         httpStatus: result.httpStatus,
@@ -70,7 +86,19 @@ async function checkAllDOIs(env) {
     
     // Post to ActivityPub if there are newly broken DOIs
     if (newlyBroken.length > 0) {
-      await postToActivityPub(newlyBroken, env);
+      // Get ActivityPub configuration from environment
+      const activityPubConfig = {
+        enabled: env.ACTIVITYPUB_ENABLED !== 'false',
+        serverUrl: env.SNAC2_SERVER_URL,
+        authToken: env.SNAC2_TOKEN
+      };
+      
+      try {
+        await postBrokenDOIsToActivityPub(newlyBroken, activityPubConfig);
+      } catch (error) {
+        console.error('Error posting to ActivityPub:', error);
+        // Continue execution even if ActivityPub posting fails
+      }
     }
     
     console.log(`Checked ${doiList.length} DOIs, ${newlyBroken.length} newly broken`);
@@ -84,74 +112,56 @@ async function checkAllDOIs(env) {
   }
 }
 
-// Check a single DOI
-async function checkSingleDOI(doi) {
-  const doiUrl = `https://doi.org/${doi}`;
-  
-  try {
-    const response = await fetch(doiUrl, {
-      method: 'HEAD', // Use HEAD to avoid downloading full content
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'DOI-Checker/1.0'
-      }
-    });
-    
-    return {
-      doi: doi,
-      working: response.status >= 200 && response.status < 400,
-      httpStatus: response.status,
-      finalUrl: response.url
-    };
-    
-  } catch (error) {
-    return {
-      doi: doi,
-      working: false,
-      httpStatus: null,
-      error: error.message
-    };
-  }
-}
-
-// Add a DOI to the monitoring list
+/**
+ * Add a DOI to the monitoring list
+ * @param {Request} request - The HTTP request
+ * @param {Object} env - Environment variables and bindings
+ * @returns {Promise<Response>} - API response
+ */
 async function addDOI(request, env) {
   try {
     const { doi } = await request.json();
     
-    if (!doi || !isValidDOI(doi)) {
-      return new Response('Invalid DOI format', { status: 400 });
+    // Validate DOI
+    const validation = validateDOI(doi);
+    if (!validation.valid) {
+      return new Response(`Invalid DOI: ${validation.error}`, { status: 400 });
     }
     
     // Get current list
-    const doiListJson = await env.DOIS.get('doi-list');
+    const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
     const doiList = doiListJson ? JSON.parse(doiListJson) : [];
     
     // Add if not already present
-    if (!doiList.includes(doi)) {
-      doiList.push(doi);
-      await env.DOIS.put('doi-list', JSON.stringify(doiList));
+    if (!doiList.includes(validation.normalized)) {
+      doiList.push(validation.normalized);
+      await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doiList));
     }
     
-    return new Response(`DOI ${doi} added to monitoring list`, { status: 200 });
+    return new Response(`DOI ${validation.normalized} added to monitoring list`, { status: 200 });
     
   } catch (error) {
     return new Response(`Error: ${error.message}`, { status: 500 });
   }
 }
 
-// Remove a DOI from the monitoring list
+/**
+ * Remove a DOI from the monitoring list
+ * @param {Request} request - The HTTP request
+ * @param {Object} env - Environment variables and bindings
+ * @returns {Promise<Response>} - API response
+ */
 async function removeDOI(request, env) {
   try {
     const { doi } = await request.json();
     
     // Get current list
-    const doiListJson = await env.DOIS.get('doi-list');
+    const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
     const doiList = doiListJson ? JSON.parse(doiListJson) : [];
     
     // Remove DOI
     const updatedList = doiList.filter(d => d !== doi);
-    await env.DOIS.put('doi-list', JSON.stringify(updatedList));
+    await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(updatedList));
     
     // Clean up status
     await env.STATUS.delete(doi);
@@ -163,10 +173,14 @@ async function removeDOI(request, env) {
   }
 }
 
-// Get current status of all DOIs
+/**
+ * Get current status of all DOIs
+ * @param {Object} env - Environment variables and bindings
+ * @returns {Promise<Response>} - API response with status JSON
+ */
 async function getStatus(env) {
   try {
-    const doiListJson = await env.DOIS.get('doi-list');
+    const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
     if (!doiListJson) {
       return new Response(JSON.stringify({ dois: [], count: 0 }), {
         headers: { 'Content-Type': 'application/json' }
@@ -198,31 +212,4 @@ async function getStatus(env) {
   } catch (error) {
     return new Response(`Error: ${error.message}`, { status: 500 });
   }
-}
-
-// Basic DOI validation
-function isValidDOI(doi) {
-  // Simple DOI pattern: 10.xxxx/yyyy
-  return /^10\.\d{4,}\/\S+$/.test(doi);
-}
-
-// Post broken DOIs to ActivityPub (placeholder)
-async function postToActivityPub(brokenDOIs, env) {
-  // TODO: Implement ActivityPub posting to your snac2 server
-  const message = `🔗 DOI Link Check Alert: ${brokenDOIs.length} broken DOI(s) found:\n${brokenDOIs.map(doi => `• https://doi.org/${doi}`).join('\n')}`;
-  
-  console.log('Would post to ActivityPub:', message);
-  
-  // Placeholder for actual implementation
-  // You'll need to configure your snac2 server details in environment variables
-  // const response = await fetch('https://your-snac2-server.com/api/note', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'Authorization': 'Bearer ' + env.SNAC2_TOKEN
-  //   },
-  //   body: JSON.stringify({
-  //     content: message
-  //   })
-  // });
 }
