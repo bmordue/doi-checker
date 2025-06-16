@@ -34,6 +34,14 @@ resource "cloudflare_workers_script" "doi_checker" {
   script_name = var.worker_name
   main_module = "worker.js"
 
+  observability = {
+    enabled = true
+    logs = {
+      enabled = true
+      invocation_logs = true
+    }
+  }
+
   bindings = [
     {
       name = "DOIS"
