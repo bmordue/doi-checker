@@ -26,13 +26,25 @@ resource "cloudflare_workers_kv_namespace" "status" {
   title      = var.kv_namespace_status
 }
 
+# Add a bundling step
+resource "null_resource" "bundle_worker" {
+  triggers = {
+    dir_sha = sha1(join("", [for f in fileset("../src", "**/*.js"): filesha1("../src/${f}")]))
+  }
+  provisioner "local-exec" {
+    command = "npx wrangler deploy --outdir ../dist --dry-run"
+    working_dir = path.module
+  }
+}
+
 # Create the Worker script
 resource "cloudflare_workers_script" "doi_checker" {
+  depends_on = [null_resource.bundle_worker]
   account_id = var.cloudflare_account_id
   # name       = var.worker_name
-  content    = file("${path.module}/../src/worker.js")
+  content    = file("${path.module}/../dist/index.js")
   script_name = var.worker_name
-  main_module = "worker.js"
+  module     = true
 
 
   # Add environment variables for snac2 configuration
@@ -95,6 +107,7 @@ resource "cloudflare_workers_cron_trigger" "daily_check" {
   schedules = [{
     cron = var.cron_schedule
   }]
+  depends_on = [cloudflare_workers_script.doi_checker]
 }
 
 # Outputs

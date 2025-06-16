@@ -27,3 +27,5 @@ logs/
 
 # Wrangler
 .wrangler/
+
+**/.claude/settings.local.json
