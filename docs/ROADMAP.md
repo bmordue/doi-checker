@@ -16,7 +16,7 @@
 11. ✅ Implement DOI checking logic (`src/lib/checker.js`)
 12. ✅ Create configuration constants (`src/config/constants.js`)
 13. ✅ Set up basic error handling and logging
-14. Test worker deployment and basic endpoints
+14. ✅ Test worker deployment and basic endpoints
 
 ## Phase 3: Testing Infrastructure
 15. ✅ Set up Jest testing framework (`npm install`)
@@ -76,15 +76,11 @@
 
 ---
 
-## Current Status: Phase 2 (Task 9)
+## Current Status: Phase 3 (Task 18)
 
 ### Next Immediate Tasks:
-- [x] Refactor worker code into modular structure (`src/worker.js`)
-- [x] Implement DOI validation utility (`src/lib/doi-validator.js`)
-- [x] Implement DOI checking logic (`src/lib/checker.js`)
-- [x] Create configuration constants (`src/config/constants.js`)
-- [x] Set up basic error handling and logging
-- [x] Test worker deployment and basic endpoints
+- [ ] Create integration tests for worker endpoints (`tests/integration/worker.test.js`)
+- [ ] Set up test automation scripts
 
 ### Success Criteria for MVP (Tasks 1-26):
 - [ ] DOI links are checked automatically on schedule

@@ -34,6 +34,27 @@ resource "cloudflare_workers_script" "doi_checker" {
   script_name = var.worker_name
   main_module = "worker.js"
 
+  observability = {
+    enabled = true
+    logs = {
+      enabled = true
+      invocation_logs = true
+    }
+  }
+
+  bindings = [
+    {
+      name = "DOIS"
+      type = "kv_namespace"
+      namespace_id = cloudflare_workers_kv_namespace.dois.id
+    },
+    {
+      name = "STATUS"
+      type = "kv_namespace"
+      namespace_id = cloudflare_workers_kv_namespace.status.id
+    }
+  ]
+
 
   # Add environment variables for snac2 configuration
 #  plain_text_binding {
