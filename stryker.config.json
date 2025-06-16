@@ -9,7 +9,7 @@
   "dashboard": {
     "project": "github.com/bmordue/doi-checker"
   },
-  "testRunner": "jest",
+  "testRunner": "vitest",
   "coverageAnalysis": "perTest",
   "mutate": ["src/**/*.js"]
 }
