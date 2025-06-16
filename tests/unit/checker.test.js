@@ -1,4 +1,5 @@
-import { checkDoi } from '../../src/utils/checker';
+import { checkDoi } from '../../src/lib/checker';
+import { describe, it, expect } from 'vitest';
 
 describe('checker', () => {
 

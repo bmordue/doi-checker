@@ -1,6 +1,7 @@
 import { processActivity } from "../../src/worker";
-import { validateActivityPub } from "../../src/utils/activitypub";
-import { checkDoi } from "../../src/utils/checker";
+import { validateActivityPub } from "../../src/lib/activitypub";
+import { checkDoi } from "../../src/lib/checker";
+import { describe, it, expect } from 'vitest';
 
 describe("worker", () => {
   it("should process a valid ActivityPub activity", async () => {

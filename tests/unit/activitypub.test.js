@@ -1,4 +1,5 @@
-import { validateActivityPub } from '../../src/utils/activitypub';
+import { validateActivityPub } from '../../src/lib/activitypub';
+import { describe, it, expect } from 'vitest';
 
 describe('activitypub', () => {
 

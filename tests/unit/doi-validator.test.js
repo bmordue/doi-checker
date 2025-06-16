@@ -1,4 +1,5 @@
- import { validateDoi } from '../../src/utils/doi-validator';
+ import { validateDoi } from '../../src/lib/doi-validator';
+ import { describe, it, expect } from 'vitest';
 
 describe('DOI Validator', () => {
 
