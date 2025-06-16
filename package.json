@@ -4,7 +4,7 @@
   "description": "Serverless DOI link checker with ActivityPub notifications",
   "main": "src/worker.js",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "deploy": "./scripts/deploy.sh",
     "dev": "wrangler dev src/worker.js"
   },
