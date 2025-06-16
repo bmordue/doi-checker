@@ -99,15 +99,15 @@ export default {
 async function checkAllDOIs(env, log) {
   try {
     // Get list of DOIs to check
-    log.info("Getting DOI list");
+    logger.info("Getting DOI list");
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
     if (!doiListJson) {
-      log.info("No DOIs to check");
+      logger.info("No DOIs to check");
       return new Response("No DOIs configured", { status: 200 });
     }
 
     const doiList = safeJsonParse(doiListJson, "Invalid DOI list format");
-    log.info(`Found ${doiList.length} DOIs to check`);
+    logger.info(`Found ${doiList.length} DOIs to check`);
 
     // const results = [];
     // const newlyBroken = [];
@@ -115,13 +115,13 @@ async function checkAllDOIs(env, log) {
     // // Get previous statuses for comparison
     const previousStatuses = {};
     for (const doi of doiList) {
-      log.debug(`Checking DOI: ${doi}`);
+      logger.debug(`Checking DOI: ${doi}`);
       const statusJson = await env.STATUS.get(doi);
       if (statusJson) {
         try {
           previousStatuses[doi] = JSON.parse(statusJson);
         } catch (error) {
-          log.warn(`Error parsing previous status for DOI ${doi}`, {
+          logger.warn(`Error parsing previous status for DOI ${doi}`, {
             error: error.message,
           });
           previousStatuses[doi] = null; // Fallback to null if parsing fails
@@ -143,13 +143,13 @@ async function checkAllDOIs(env, log) {
     //       try {
     //         previousStatus = JSON.parse(previousStatusJson);
     //       } catch (error) {
-    //         log.warn(`Error parsing previous status for DOI ${doi}`, { error: error.message });
+    //         logger.warn(`Error parsing previous status for DOI ${doi}`, { error: error.message });
     //       }
     //     }
 
     //     // If it was working before but is broken now, it's newly broken
     //     if (previousStatus?.working && !result.working) {
-    //       log.warn(`DOI has become broken: ${doi}`, {
+    //       logger.warn(`DOI has become broken: ${doi}`, {
     //         previousStatus: previousStatus?.httpStatus,
     //         currentStatus: result.httpStatus,
     //         error: result.error
@@ -168,7 +168,7 @@ async function checkAllDOIs(env, log) {
     //     await env.STATUS.put(doi, JSON.stringify(status));
 
     //   } catch (error) {
-    //     log.error(`Error checking DOI ${doi}`, { error: error.message });
+    //     logger.error(`Error checking DOI ${doi}`, { error: error.message });
 
     //     // Continue with next DOI even if there's an error
     //     results.push({
@@ -202,7 +202,7 @@ async function checkAllDOIs(env, log) {
 
     // Post to ActivityPub if there are newly broken DOIs
     if (newlyBroken.length > 0) {
-      log.info(
+      logger.info(
         `Posting ${newlyBroken.length} newly broken DOIs to ActivityPub`
       );
       // Get ActivityPub configuration from environment
@@ -215,12 +215,12 @@ async function checkAllDOIs(env, log) {
       try {
         await postBrokenDOIsToActivityPub(newlyBroken, activityPubConfig);
       } catch (error) {
-        log.error("Error posting to ActivityPub", { error: error.message });
+        logger.error("Error posting to ActivityPub", { error: error.message });
         // Continue execution even if ActivityPub posting fails
       }
     }
 
-    log.info(
+    logger.info(
       `Checked ${doiList.length} DOIs, ${newlyBroken.length} newly broken`
     );
     return new Response(
@@ -235,7 +235,7 @@ async function checkAllDOIs(env, log) {
       }
     );
   } catch (error) {
-    log.error("Error in checkAllDOIs", {
+    logger.error("Error in checkAllDOIs", {
       error: error.message,
       stack: error.stack,
     });
@@ -247,10 +247,9 @@ async function checkAllDOIs(env, log) {
  * Add a DOI to the monitoring list
  * @param {Request} request - The HTTP request
  * @param {Object} env - Environment variables and bindings
- * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response
  */
-async function addDOI(request, env, log) {
+export async function addDOI(request, env = {}) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
@@ -264,7 +263,7 @@ async function addDOI(request, env, log) {
       return new Response(`Invalid DOI: ${validation.error}`, { status: 400 });
     }
 
-    log.info(`Adding DOI: ${doi}`);
+    logger.info(`Adding DOI: ${doi}`);
 
     // Get current list
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
@@ -276,9 +275,9 @@ async function addDOI(request, env, log) {
     if (!doiList.includes(validation.normalized)) {
       doiList.push(validation.normalized);
       await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doiList));
-      log.info(`DOI added: ${doi}`);
+      logger.info(`DOI added: ${doi}`);
     } else {
-      log.info(`DOI already exists: ${doi}`);
+      logger.info(`DOI already exists: ${doi}`);
     }
 
     return new Response(
@@ -292,7 +291,7 @@ async function addDOI(request, env, log) {
       }
     );
   } catch (error) {
-    log.error("Error in addDOI", { error: error.message });
+    logger.error("Error in addDOI", { error: error.message });
     return createErrorResponse(error);
   }
 }
@@ -317,7 +316,7 @@ async function removeDOI(request, env, log) {
       throw new ValidationError("DOI is required");
     }
 
-    log.info(`Removing DOI: ${doi}`);
+    logger.info(`Removing DOI: ${doi}`);
 
     // Get current list
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
@@ -340,7 +339,7 @@ async function removeDOI(request, env, log) {
     // Clean up status
     await env.STATUS.delete(doi);
 
-    log.info(`DOI removed: ${doi}`);
+    logger.info(`DOI removed: ${doi}`);
 
     return new Response(
       JSON.stringify({
@@ -353,7 +352,7 @@ async function removeDOI(request, env, log) {
       }
     );
   } catch (error) {
-    log.error("Error in removeDOI", { error: error.message });
+    logger.error("Error in removeDOI", { error: error.message });
     return createErrorResponse(error);
   }
 }
@@ -366,7 +365,7 @@ async function removeDOI(request, env, log) {
  */
 async function getStatus(env, log) {
   try {
-    log.info("Getting DOI status");
+    logger.info("Getting DOI status");
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
 
     if (!doiListJson) {
@@ -387,7 +386,7 @@ async function getStatus(env, log) {
           ? JSON.parse(statusJson)
           : { working: null, lastCheck: null };
       } catch (error) {
-        log.warn(`Error parsing status for DOI ${doi}`, {
+        logger.warn(`Error parsing status for DOI ${doi}`, {
           error: error.message,
         });
         status = {
@@ -411,13 +410,13 @@ async function getStatus(env, log) {
       unchecked: statuses.filter((s) => s.working === null).length,
     };
 
-    log.info(`Retrieved status for ${doiList.length} DOIs`);
+    logger.info(`Retrieved status for ${doiList.length} DOIs`);
 
     return new Response(JSON.stringify(response), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    log.error("Error in getStatus", { error: error.message });
+    logger.error("Error in getStatus", { error: error.message });
     return createErrorResponse(error);
   }
 }

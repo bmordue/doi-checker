@@ -1,24 +1,24 @@
- import { validateDoi } from '../../src/lib/doi-validator';
+ import { validateDOI  } from '../../src/lib/doi-validator';
  import { describe, it, expect } from 'vitest';
 
 describe('DOI Validator', () => {
 
   it('should return true for a valid DOI', () => {
     const validDoi = '10.1000/xyz123';
-    expect(validateDoi(validDoi)).toBe(true);
+    expect(validateDOI(validDoi).valid).toBe(true);
   });
 
   it('should return false for an invalid DOI', () => {
     const invalidDoi = 'invalid-doi';
-    expect(validateDoi(invalidDoi)).toBe(false);
+    expect(validateDOI(invalidDoi).valid).toBe(false);
   });
 
   it('should return false for an empty string', () => {
-    expect(validateDoi('')).toBe(false);
+    expect(validateDOI('').valid).toBe(false);
   });
 
   it('should return false for a DOI with spaces', () => {
     const doiWithSpaces = '10.1000/xyz 123';
-    expect(validateDoi(doiWithSpaces)).toBe(false);
+    expect(validateDOI(doiWithSpaces).valid).toBe(false);
   });
 });
