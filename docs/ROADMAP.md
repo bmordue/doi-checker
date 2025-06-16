@@ -79,12 +79,12 @@
 ## Current Status: Phase 2 (Task 9)
 
 ### Next Immediate Tasks:
-- [ ] Refactor worker code into modular structure (`src/worker.js`)
-- [ ] Implement DOI validation utility (`src/lib/doi-validator.js`)
-- [ ] Implement DOI checking logic (`src/lib/checker.js`)
-- [ ] Create configuration constants (`src/config/constants.js`)
-- [ ] Set up basic error handling and logging
-- [ ] Test worker deployment and basic endpoints
+- [x] Refactor worker code into modular structure (`src/worker.js`)
+- [x] Implement DOI validation utility (`src/lib/doi-validator.js`)
+- [x] Implement DOI checking logic (`src/lib/checker.js`)
+- [x] Create configuration constants (`src/config/constants.js`)
+- [x] Set up basic error handling and logging
+- [x] Test worker deployment and basic endpoints
 
 ### Success Criteria for MVP (Tasks 1-26):
 - [ ] DOI links are checked automatically on schedule
