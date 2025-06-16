@@ -1,0 +1,13 @@
+{
+    "checked": 1,
+    "newlyBroken": 0,
+    "results": [
+        {
+            "doi": "10.1111/nph.70234",
+            "working": false,
+            "httpStatus": 403,
+            "finalUrl": "https://nph.onlinelibrary.wiley.com/doi/10.1111/nph.70234",
+            "timestamp": "2025-06-16T16:12:31.895Z"
+        }
+    ]
+}
