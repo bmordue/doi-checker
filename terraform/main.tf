@@ -30,7 +30,7 @@ resource "cloudflare_workers_kv_namespace" "status" {
 resource "cloudflare_workers_script" "doi_checker" {
   account_id = var.cloudflare_account_id
   # name       = var.worker_name
-  content    = file("${path.module}/../dist/worker.js")
+  content    = file("${path.module}/dist/worker.js")
   script_name = var.worker_name
   main_module = "worker.js"
 

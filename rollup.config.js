@@ -7,7 +7,7 @@ export default {
   output: {
     exports: 'named',
     format: 'es',
-    file: 'dist/worker.js',
+    file: 'terraform/dist/worker.js',
     sourcemap: true,
   },
 
