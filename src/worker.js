@@ -22,11 +22,11 @@ export default {
   async fetch(request, env) {
     // Setup request-specific logging context
     const requestId = crypto.randomUUID();
-    const requestLogger = log.createScopedLogger(`request:${requestId}`);
+    const requestLogger = logger.createScopedLogger(`request:${requestId}`);
 
     try {
       const url = new URL(request.url);
-      requestlog.info(`Handling ${request.method} ${url.pathname}`);
+      requestLogger.info(`Handling ${request.method} ${url.pathname}`);
 
       // API endpoints
       if (url.pathname === "/add-doi" && request.method === "POST") {
@@ -61,7 +61,7 @@ export default {
         }
       );
     } catch (error) {
-      requestlog.error("Error handling request", {
+      requestLogger.error("Error handling request", {
         error: error.message,
         stack: error.stack,
       });
