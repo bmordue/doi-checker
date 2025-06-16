@@ -15,7 +15,7 @@ const DOI_PATTERNS = {
   BASIC: /^10\.\d{4,}\/\S+$/,
   
   // Strict pattern with more validation
-  STRICT: /^10\.\d{4,}\/[a-zA-Z0-9()[\]:.;-_/]+$/,
+  STRICT: /^10\.\d{4,}\/[a-zA-Z0-9()[\]:.;\-_/]+$/,
   
   // Leading DOI prefix (remove if present)
   PREFIX: /^(?:doi:|https?:\/\/(?:dx\.)?doi\.org\/)(10\..+)$/i

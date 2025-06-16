@@ -96,7 +96,7 @@ export default {
  * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response
  */
-async function checkAllDOIs(env = {}, log = logger) {
+async function checkAllDOIs(env, log = logger) {
   try {
     // Get list of DOIs to check
     log.info("Getting DOI list");
@@ -249,7 +249,7 @@ async function checkAllDOIs(env = {}, log = logger) {
  * @param {Object} env - Environment variables and bindings
  * @returns {Promise<Response>} - API response
  */
-export async function addDOI(request, env = {}, log = logger) {
+export async function addDOI(request, env, log = logger) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
@@ -303,7 +303,7 @@ export async function addDOI(request, env = {}, log = logger) {
  * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response
  */
-async function removeDOI(request, env = {}, log = logger) {
+async function removeDOI(request, env, log = logger) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
@@ -363,7 +363,7 @@ async function removeDOI(request, env = {}, log = logger) {
  * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response with status JSON
  */
-async function getStatus(env = {}, log = logger) {
+async function getStatus(env, log = logger) {
   try {
     log.info("Getting DOI status");
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
