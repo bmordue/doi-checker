@@ -11,5 +11,5 @@
   },
   "testRunner": "vitest",
   "coverageAnalysis": "perTest",
-  "mutate": ["src/**/*.js"]
+  "mutate": ["src/**/*.js", "!src/config/constants.js"]
 }

@@ -31,3 +31,4 @@ logs/
 
 *~
 .stryker-tmp/
+dist/

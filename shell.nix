@@ -16,11 +16,8 @@ pkgs.mkShell {
     # Terraform CLI
     pkgs.terraform
 
-    # Claude CLI dependencies (requires Python 3)
-#    pkgs.python311
-#    pkgs.python311Packages.pip
-#    pkgs.python311Packages.setuptools
-#    pkgs.python311Packages.wheel
+    # Cloudflare local development
+    pkgs.wrangler
 
     # Additional useful tools
     pkgs.jq          # JSON processing

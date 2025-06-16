@@ -69,8 +69,8 @@ export const LOGGING_CONFIG = {
   // Whether to include context information in logs
   INCLUDE_CONTEXT: true,
   
-  // Enable colorized output in development
-  COLORIZE: process.env.NODE_ENV !== 'production',
+  // Enable colorized output
+  COLORIZE: true,
   
   // Log levels for specific modules (override default)
   MODULE_LEVELS: {
@@ -84,10 +84,10 @@ export const LOGGING_CONFIG = {
 // Error Handling Configuration
 export const ERROR_CONFIG = {
   // Whether to include stack traces in error responses
-  INCLUDE_STACK_TRACES: process.env.NODE_ENV !== 'production',
+  INCLUDE_STACK_TRACES: true,
   
   // Whether to include error context in responses
-  INCLUDE_ERROR_CONTEXT: process.env.NODE_ENV !== 'production',
+  INCLUDE_ERROR_CONTEXT: true,
   
   // Default error message for generic errors
   DEFAULT_ERROR_MESSAGE: 'An unexpected error occurred',
@@ -102,7 +102,7 @@ export const APP_CONFIG = {
   DEFAULT_CHECK_CRON: '0 9 * * *', // 9 AM UTC daily
   
   // Debug mode
-  DEBUG: process.env.DEBUG === 'true' || process.env.NODE_ENV !== 'production',
+  DEBUG: true,
   
   // Application version
   VERSION: '1.0.0',

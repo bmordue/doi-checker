@@ -96,7 +96,7 @@ The project requires configuration in two main places:
 
 ## Testing
 
-The project uses Jest for testing:
+The project uses Vitest for testing:
 
 - Unit tests in `tests/unit/`
 - Integration tests in `tests/integration/`
