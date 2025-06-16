@@ -22,11 +22,11 @@ export default {
   async fetch(request, env) {
     // Setup request-specific logging context
     const requestId = crypto.randomUUID();
-    const requestLogger = logger.createScopedLogger(`request:${requestId}`);
+    const requestLogger = log.createScopedLogger(`request:${requestId}`);
 
     try {
       const url = new URL(request.url);
-      requestLogger.info(`Handling ${request.method} ${url.pathname}`);
+      requestlog.info(`Handling ${request.method} ${url.pathname}`);
 
       // API endpoints
       if (url.pathname === "/add-doi" && request.method === "POST") {
@@ -61,7 +61,7 @@ export default {
         }
       );
     } catch (error) {
-      requestLogger.error("Error handling request", {
+      requestlog.error("Error handling request", {
         error: error.message,
         stack: error.stack,
       });
@@ -73,14 +73,14 @@ export default {
    * Handle scheduled events
    */
   async scheduled(env) {
-    const scheduledLogger = logger.createScopedLogger("scheduled");
+    const scheduledLogger = log.createScopedLogger("scheduled");
 
     try {
-      scheduledLogger.info("Starting scheduled DOI check");
+      scheduledlog.info("Starting scheduled DOI check");
       await checkAllDOIs(env, scheduledLogger);
-      scheduledLogger.info("Completed scheduled DOI check");
+      scheduledlog.info("Completed scheduled DOI check");
     } catch (error) {
-      scheduledLogger.error("Error in scheduled DOI check", {
+      scheduledlog.error("Error in scheduled DOI check", {
         error: error.message,
         stack: error.stack,
       });
@@ -96,7 +96,7 @@ export default {
  * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response
  */
-async function checkAllDOIs(env, log) {
+async function checkAllDOIs(env = {}, log = logger) {
   try {
     // Get list of DOIs to check
     log.info("Getting DOI list");
@@ -247,10 +247,9 @@ async function checkAllDOIs(env, log) {
  * Add a DOI to the monitoring list
  * @param {Request} request - The HTTP request
  * @param {Object} env - Environment variables and bindings
- * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response
  */
-async function addDOI(request, env, log) {
+export async function addDOI(request, env = {}, log = logger) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
@@ -304,7 +303,7 @@ async function addDOI(request, env, log) {
  * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response
  */
-async function removeDOI(request, env, log) {
+async function removeDOI(request, env = {}, log = logger) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
@@ -364,7 +363,7 @@ async function removeDOI(request, env, log) {
  * @param {Object} log - Logger instance
  * @returns {Promise<Response>} - API response with status JSON
  */
-async function getStatus(env, log) {
+async function getStatus(env = {}, log = logger) {
   try {
     log.info("Getting DOI status");
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);

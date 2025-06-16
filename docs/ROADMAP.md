@@ -11,35 +11,35 @@
 8. ✅ Deploy initial infrastructure with `terraform apply`
 
 ## Phase 2: Core Worker Implementation
-9. Refactor worker code into modular structure (`src/worker.js`)
-10. Implement DOI validation utility (`src/lib/doi-validator.js`)
-11. Implement DOI checking logic (`src/lib/checker.js`)
-12. Create configuration constants (`src/config/constants.js`)
-13. Set up basic error handling and logging
+9. ✅ Refactor worker code into modular structure (`src/worker.js`)
+10. ✅ Implement DOI validation utility (`src/lib/doi-validator.js`)
+11. ✅ Implement DOI checking logic (`src/lib/checker.js`)
+12. ✅ Create configuration constants (`src/config/constants.js`)
+13. ✅ Set up basic error handling and logging
 14. Test worker deployment and basic endpoints
 
 ## Phase 3: Testing Infrastructure
-15. Set up Jest testing framework (`npm install`)
-16. Write unit tests for DOI validator (`tests/unit/doi-validator.test.js`)
-17. Write unit tests for checker logic (`tests/unit/checker.test.js`)
+15. ✅ Set up Jest testing framework (`npm install`)
+16. ✅ Write unit tests for DOI validator (`tests/unit/doi-validator.test.js`)
+17. ✅ Write unit tests for checker logic (`tests/unit/checker.test.js`)
 18. Create integration tests for worker endpoints (`tests/integration/worker.test.js`)
-19. Create sample test data (`tests/fixtures/sample-dois.json`)
+19. ✅ Create sample test data (`tests/fixtures/sample-dois.json`)
 20. Set up test automation scripts
 
 ## Phase 4: ActivityPub Integration
 21. Research snac2 API endpoints and authentication
-22. Implement ActivityPub posting module (`src/lib/activitypub.js`)
+22. ✅ Implement ActivityPub posting module (`src/lib/activitypub.js`)
 23. Add snac2 configuration to Terraform (environment variables)
-24. Write tests for ActivityPub functionality
+24. ✅ Write tests for ActivityPub functionality
 25. Test end-to-end posting to snac2 server
-26. Add error handling for ActivityPub failures
+26. ✅ Add error handling for ActivityPub failures
 
 ## Phase 5: Automation & Scripts
 27. Create deployment script (`scripts/deploy.sh`)
 28. Create API testing script (`scripts/test-endpoints.sh`)
 29. Create sample data setup script (`scripts/add-sample-dois.sh`)
 30. Test all automation scripts
-31. Set up GitHub Actions for CI/CD (`.github/workflows/`)
+31. ✅ Set up GitHub Actions for CI/CD (`.github/workflows/`)
 32. Test automated deployment pipeline
 
 ## Phase 6: Documentation

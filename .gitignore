@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 
 # Terraform
 terraform/.terraform/
@@ -29,3 +28,6 @@ logs/
 .wrangler/
 
 **/.claude/settings.local.json
+
+*~
+.stryker-tmp/
