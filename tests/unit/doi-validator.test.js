@@ -1,5 +1,6 @@
+ import { validateDoi } from '../../src/utils/doi-validator';
+
 describe('DOI Validator', () => {
-  const { validateDoi } = require('../../src/utils/doi-validator');
 
   it('should return true for a valid DOI', () => {
     const validDoi = '10.1000/xyz123';

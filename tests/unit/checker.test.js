@@ -1,5 +1,6 @@
+import { checkDoi } from '../../src/utils/checker';
+
 describe('checker', () => {
-  const { checkDoi } = require('../../src/utils/checker');
 
   it('should return true for a valid DOI', async () => {
     const validDoi = '10.1000/xyz123';

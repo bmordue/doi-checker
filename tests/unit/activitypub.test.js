@@ -1,5 +1,6 @@
+import { validateActivityPub } from '../../src/utils/activitypub';
+
 describe('activitypub', () => {
-  const { validateActivityPub } = require('../../src/utils/activitypub');
 
   it('should return true for a valid ActivityPub URL', () => {
     const validUrl = 'https://example.com/activitypub';
