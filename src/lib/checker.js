@@ -65,11 +65,22 @@ export async function checkSingleDOI(doi, options = {}) {
             timeout: checkOptions.timeout
           }
         });
+
+        const finalResponse = await fetch(response.url, {
+          method: 'HEAD', // Ensure we get the final URL after redirects
+          redirect: checkOptions.followRedirects ? 'follow' : 'manual',
+          headers: {
+            'User-Agent': checkOptions.userAgent
+          },
+          cf: {
+            timeout: checkOptions.timeout
+          }
+        });
         
         const result = {
           doi: doi,
-          working: response.status >= 200 && response.status < 400,
-          httpStatus: response.status,
+          working: finalResponse.status >= 200 && finalResponse.status < 400,
+          httpStatus: finalResponse.status,
           finalUrl: response.url,
           timestamp: new Date().toISOString()
         };
