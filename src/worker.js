@@ -3,7 +3,7 @@
  * Main entry point for handling requests and scheduled events
  */
 
-import logger from "./lib/log.js";
+import logger from "./lib/logger.js";
 import {
   ValidationError,
   NotFoundError,
