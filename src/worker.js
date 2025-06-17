@@ -73,14 +73,14 @@ export default {
    * Handle scheduled events
    */
   async scheduled(env) {
-    const scheduledLogger = log.createScopedLogger("scheduled");
+    const scheduledLogger = logger.createScopedLogger("scheduled");
 
     try {
-      scheduledlog.info("Starting scheduled DOI check");
+      scheduledLogger.info("Starting scheduled DOI check");
       await checkAllDOIs(env, scheduledLogger);
-      scheduledlog.info("Completed scheduled DOI check");
+      scheduledLogger.info("Completed scheduled DOI check");
     } catch (error) {
-      scheduledlog.error("Error in scheduled DOI check", {
+      scheduledLogger.error("Error in scheduled DOI check", {
         error: error.message,
         stack: error.stack,
       });
