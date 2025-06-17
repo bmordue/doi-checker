@@ -119,6 +119,42 @@ resource "cloudflare_workers_cron_trigger" "daily_check" {
   depends_on = [cloudflare_workers_script.doi_checker]
 }
 
+resource "cloudflare_pages_project" "status_page" {
+  account_id = var.cloudflare_account_id
+  name       = var.pages_project_name
+  production_branch = var.production_branch_name
+
+  source {
+    type = "github"
+    config {
+      owner             = var.github_repo_owner
+      repo_name         = var.github_repo_name
+      production_branch = var.production_branch_name
+      publish_dir       = "public" // Points to the 'public' directory at the root of the repo
+      deployments_enabled = true
+      pr_comments_enabled = true // Optional: enable/disable PR comments
+    }
+  }
+
+  build_config {
+    # For static sites with no build step, these can be empty or omitted
+    # build_command   = "" # No build command needed
+    # destination_dir = "" # Not needed as publish_dir in source.config is used
+  }
+
+  # Optional: deployment_configs for preview and production
+  # deployment_configs {
+  #   preview {
+  #     # environment_variables = {}
+  #     # secrets = {}
+  #   }
+  #   production {
+  #     # environment_variables = {}
+  #     # secrets = {}
+  #   }
+  # }
+}
+
 # Outputs
 output "worker_url" {
   value = "https://${cloudflare_workers_script.doi_checker.script_name}.${var.cloudflare_account_id}.workers.dev"
@@ -129,4 +165,9 @@ output "kv_namespace_ids" {
     dois   = cloudflare_workers_kv_namespace.dois.id
     status = cloudflare_workers_kv_namespace.status.id
   }
+}
+
+output "status_page_url" {
+  description = "URL for the deployed static status page on Cloudflare Pages."
+  value       = "https://${cloudflare_pages_project.status_page.subdomain}.pages.dev"
 }
