@@ -1,0 +1,8 @@
+name = "doi-checker"
+main = "src/worker.js"
+compatibility_date = "2023-10-30"
+
+kv_namespaces = [
+  { binding = "DOIS", id = "test_dois_kv_id" },
+  { binding = "STATUS", id = "test_status_kv_id" }
+]

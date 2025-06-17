@@ -1,16 +1,19 @@
 import { defineConfig } from 'vitest/config';
+import cloudflarePagesPlugin from 'vite-plugin-cloudflare';
 
 export default defineConfig({
+  plugins: [cloudflarePagesPlugin({ scriptPath: './src/worker.js', modules: true })],
   test: {
     globals: true, // Optional: enable global APIs like describe, it
-    environment: 'miniflare', // Use miniflare environment
-    environmentOptions: {
-      // Miniflare specific options:
-      // You can specify modules, KV namespaces, DO bindings, etc. here if needed globally
-      // For this test, we'll mock them dynamically within the test files.
-      scriptPath: './src/worker.js', // Path to the worker script
-      modules: true, // Enable module support
-    },
+    // environment: 'miniflare', // Use miniflare environment - REMOVED
+    // environmentOptions: { // REMOVED
+    //   // Miniflare specific options:
+    //   // You can specify modules, KV namespaces, DO bindings, etc. here if needed globally
+    //   // For this test, we'll mock them dynamically within the test files.
+    //   // scriptPath: './src/worker.js', // Path to the worker script - Handled by plugin
+    //   // modules: true, // Enable module support - Handled by plugin
+    //   kvNamespaces: ["DOIS", "STATUS"], // Declare KV namespaces for Miniflare
+    // },
     // To allow mocking of global.fetch, ensure it's not frozen
     setupFiles: ['./tests/setup-vitest.js'], // A setup file if needed for global mocks
   },
