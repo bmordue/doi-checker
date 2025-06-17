@@ -25,8 +25,10 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@stryker-mutator/core": "^9.0.1",
     "@stryker-mutator/vitest-runner": "^9.0.1",
+    "miniflare": "^4.20250604.1",
     "rollup": "^4.43.0",
     "rollup-plugin-copy": "^3.5.0",
-    "vitest": "^3.2.3"
+    "vitest": "^3.2.3",
+    "vitest-environment-miniflare": "^2.14.4"
   }
 }
