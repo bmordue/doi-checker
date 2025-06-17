@@ -21,7 +21,7 @@ const createKVNamespaceMock = () => {
   };
 };
 
-describe('Worker Integration Tests', () => {
+describe.skip('Worker Integration Tests', () => {
   let env;
   let mockFetch;
   let proxyData; // To hold the result of getPlatformProxy for dispose

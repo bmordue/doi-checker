@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import cloudflarePagesPlugin from 'vite-plugin-cloudflare';
 
 export default defineConfig({
-  plugins: [cloudflarePagesPlugin({ scriptPath: './src/worker.js', modules: true })],
+  // plugins: [cloudflarePagesPlugin({ scriptPath: './src/worker.js', modules: true })],
   test: {
     globals: true, // Optional: enable global APIs like describe, it
     // environment: 'miniflare', // Use miniflare environment - REMOVED
