@@ -16,7 +16,7 @@
 11. ✅ Implement DOI checking logic (`src/lib/checker.js`)
 12. ✅ Create configuration constants (`src/config/constants.js`)
 13. ✅ Set up basic error handling and logging
-14. Test worker deployment and basic endpoints
+14. ✅ Test worker deployment and basic endpoints
 
 ## Phase 3: Testing Infrastructure
 15. ✅ Set up Jest testing framework (`npm install`)
