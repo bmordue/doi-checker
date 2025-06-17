@@ -77,9 +77,11 @@ export async function checkSingleDOI(doi, options = {}) {
           }
         });
         
+        // working: don't need to get a 20x response, just need to know if the DOI resolves
+        // Consider any 2xx, 3xx, or 4xx (except 404) as "resolves"
         const result = {
           doi: doi,
-          working: finalResponse.status >= 200 && finalResponse.status < 400,
+          working: response.status !== 404,
           httpStatus: finalResponse.status,
           finalUrl: response.url,
           timestamp: new Date().toISOString()
