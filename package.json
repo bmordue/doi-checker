@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy": "./scripts/deploy.sh",
     "dev": "wrangler dev src/worker.js"
   },

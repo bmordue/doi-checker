@@ -12,7 +12,7 @@ export default defineConfig({
       modules: true, // Enable module support
     },
     // To allow mocking of global.fetch, ensure it's not frozen
-    setupFiles: ['./test/setup-vitest.js'], // A setup file if needed for global mocks
+    setupFiles: ['./tests/setup-vitest.js'], // A setup file if needed for global mocks
   },
   resolve: {
     // Required for Miniflare to resolve .js files as modules correctly
