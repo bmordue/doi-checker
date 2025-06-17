@@ -34,6 +34,15 @@ resource "cloudflare_workers_script" "doi_checker" {
   script_name = var.worker_name
   main_module = "worker.js"
 
+  # Add this site block
+  site {
+    bucket = "${path.module}/../public"
+    # entry_point is not needed for simple static assets,
+    # wrangler figures it out.
+    # If specific routing or build steps were needed,
+    # entry_point and other options might be used.
+  }
+
   observability = {
     enabled = true
     logs = {
@@ -121,6 +130,7 @@ resource "cloudflare_workers_cron_trigger" "daily_check" {
 
 # Outputs
 output "worker_url" {
+  description = "The main URL for the worker. Static assets from the 'public' directory (e.g., index.html) are served under this base URL."
   value = "https://${cloudflare_workers_script.doi_checker.script_name}.${var.cloudflare_account_id}.workers.dev"
 }
 

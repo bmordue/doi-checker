@@ -70,3 +70,13 @@ You can use the `--terraform-command` argument to run other Terraform commands l
 ### Worker Output
 
 After a successful deployment, Terraform will output the `worker_url` and `kv_namespace_ids`.
+
+## Accessing the Static Status Page
+
+The DOI Checker worker also includes a static HTML page that displays the current status of all monitored DOIs. This page is deployed along with the worker.
+
+Once the worker is deployed, the status page can be accessed at the worker's URL by appending `/index.html` to it. For example, if your `worker_url` is `https://my-doi-checker.youraccount.workers.dev`, the status page will be available at:
+
+`https://my-doi-checker.youraccount.workers.dev/index.html`
+
+This page fetches data from the `/status` endpoint of the worker and presents it in a human-readable format, showing overall statistics and a table of individual DOI statuses.

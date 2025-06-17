@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOI Checker Status</title>
+    <style>
+        /* Basic styling will go here */
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { text-align: center; }
+        #status-container { margin-top: 20px; }
+        .summary { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; }
+        .doi-table { width: 100%; border-collapse: collapse; }
+        .doi-table th, .doi-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .doi-table th { background-color: #f2f2f2; }
+        .status-working { color: green; }
+        .status-broken { color: red; }
+        .status-unchecked { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>DOI Checker Status</h1>
+    <div id="summary-container">
+        <!-- Summary information will be populated here -->
+    </div>
+    <div id="status-container">
+        <!-- DOI statuses will be populated here -->
+        <p>Loading status...</p>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const statusContainer = document.getElementById('status-container');
+        const summaryContainer = document.getElementById('summary-container');
+
+        fetch('/status')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Clear loading message
+                statusContainer.innerHTML = '';
+                summaryContainer.innerHTML = '';
+
+                // Display summary
+                const summaryDiv = document.createElement('div');
+                summaryDiv.classList.add('summary');
+                summaryDiv.innerHTML = `
+                    <p><strong>Total DOIs:</strong> ${data.count}</p>
+                    <p><strong>Working:</strong> <span class="status-working">${data.working}</span></p>
+                    <p><strong>Broken:</strong> <span class="status-broken">${data.broken}</span></p>
+                    <p><strong>Unchecked:</strong> <span class="status-unchecked">${data.unchecked}</span></p>
+                `;
+                summaryContainer.appendChild(summaryDiv);
+
+                if (data.dois && data.dois.length > 0) {
+                    const table = document.createElement('table');
+                    table.classList.add('doi-table');
+
+                    // Table header
+                    const thead = table.createTHead();
+                    const headerRow = thead.insertRow();
+                    const headers = ['DOI', 'Last Check', 'Status', 'HTTP Status', 'Error'];
+                    headers.forEach(text => {
+                        const th = document.createElement('th');
+                        th.textContent = text;
+                        headerRow.appendChild(th);
+                    });
+
+                    // Table body
+                    const tbody = table.createTBody();
+                    data.dois.forEach(doiStatus => {
+                        const row = tbody.insertRow();
+
+                        row.insertCell().textContent = doiStatus.doi || 'N/A';
+                        row.insertCell().textContent = doiStatus.lastCheck ? new Date(doiStatus.lastCheck).toLocaleString() : 'N/A';
+
+                        const statusCell = row.insertCell();
+                        if (doiStatus.working === true) {
+                            statusCell.textContent = 'Working';
+                            statusCell.className = 'status-working';
+                        } else if (doiStatus.working === false) {
+                            statusCell.textContent = 'Broken';
+                            statusCell.className = 'status-broken';
+                        } else {
+                            statusCell.textContent = 'Unchecked';
+                            statusCell.className = 'status-unchecked';
+                        }
+
+                        row.insertCell().textContent = doiStatus.httpStatus || 'N/A';
+                        row.insertCell().textContent = doiStatus.error || 'N/A';
+                    });
+
+                    statusContainer.appendChild(table);
+                } else {
+                    statusContainer.innerHTML = '<p>No DOI statuses to display.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+                summaryContainer.innerHTML = ''; // Clear summary on error too
+                statusContainer.innerHTML = `<p style="color: red;">Error loading status: ${error.message}. See console for details.</p>`;
+            });
+    });
+    </script>
+</body>
+</html>
