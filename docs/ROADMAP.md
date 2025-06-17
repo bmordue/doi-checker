@@ -22,7 +22,7 @@
 15. ✅ Set up Jest testing framework (`npm install`)
 16. ✅ Write unit tests for DOI validator (`tests/unit/doi-validator.test.js`)
 17. ✅ Write unit tests for checker logic (`tests/unit/checker.test.js`)
-18. Create integration tests for worker endpoints (`tests/integration/worker.test.js`)
+18. ✅ Create integration tests for worker endpoints (`tests/integration/worker.test.js`)
 19. ✅ Create sample test data (`tests/fixtures/sample-dois.json`)
 20. Set up test automation scripts
 
@@ -35,7 +35,7 @@
 26. ✅ Add error handling for ActivityPub failures
 
 ## Phase 5: Automation & Scripts
-27. Create deployment script (`scripts/deploy.sh`)
+27. ✅ Create deployment script (`scripts/deploy.sh`)
 28. Create API testing script (`scripts/test-endpoints.sh`)
 29. Create sample data setup script (`scripts/add-sample-dois.sh`)
 30. Test all automation scripts
@@ -44,7 +44,7 @@
 
 ## Phase 6: Documentation
 33. Write comprehensive API documentation (`docs/API.md`)
-34. Create deployment guide (`docs/DEPLOYMENT.md`)
+34. ✅ Create deployment guide (`docs/DEPLOYMENT.md`)
 35. Document configuration options (`docs/CONFIGURATION.md`)
 36. Update README with complete usage instructions
 37. Add inline code documentation and comments
@@ -76,15 +76,10 @@
 
 ---
 
-## Current Status: Phase 2 (Task 9)
+## Current Status: Phase 3 (Task 20)
 
 ### Next Immediate Tasks:
-- [x] Refactor worker code into modular structure (`src/worker.js`)
-- [x] Implement DOI validation utility (`src/lib/doi-validator.js`)
-- [x] Implement DOI checking logic (`src/lib/checker.js`)
-- [x] Create configuration constants (`src/config/constants.js`)
-- [x] Set up basic error handling and logging
-- [x] Test worker deployment and basic endpoints
+- [ ] Set up test automation scripts
 
 ### Success Criteria for MVP (Tasks 1-26):
 - [ ] DOI links are checked automatically on schedule
