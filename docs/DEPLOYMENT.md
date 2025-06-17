@@ -71,12 +71,20 @@ You can use the `--terraform-command` argument to run other Terraform commands l
 
 After a successful deployment, Terraform will output the `worker_url` and `kv_namespace_ids`.
 
-## Accessing the Static Status Page
+## Static Status Page Deployment
 
-The DOI Checker worker also includes a static HTML page that displays the current status of all monitored DOIs. This page is deployed along with the worker.
+This project includes a static HTML page (`public/index.html`) that displays the current status of all monitored DOIs. This page is deployed using Cloudflare Pages.
 
-Once the worker is deployed, the status page can be accessed at the worker's URL by appending `/index.html` to it. For example, if your `worker_url` is `https://my-doi-checker.youraccount.workers.dev`, the status page will be available at:
+### How it Works
+- A Cloudflare Pages project has been configured in Terraform (`cloudflare_pages_project.status_page`).
+- This Pages project is linked to the project's GitHub repository (specifically the `public/` directory on the production branch, e.g., "main").
+- When changes are pushed to the `public/` directory on the production branch of the GitHub repository, Cloudflare Pages automatically rebuilds and deploys the static page.
 
-`https://my-doi-checker.youraccount.workers.dev/index.html`
+### Accessing the Status Page
+After a successful Terraform deployment (`./scripts/deploy.sh`) and once Cloudflare Pages has completed its deployment from the GitHub repository, the static status page will be available at the URL provided in the `status_page_url` Terraform output.
 
-This page fetches data from the `/status` endpoint of the worker and presents it in a human-readable format, showing overall statistics and a table of individual DOI statuses.
+The URL will typically be in the format: `https://<pages_project_name>.pages.dev`.
+
+### Important Notes
+- **Initial Setup:** The very first time Terraform attempts to create the Cloudflare Pages project, or if the Cloudflare GitHub App permissions change, you might need to confirm or authorize access within the Cloudflare dashboard for the Pages project to connect to the GitHub repository.
+- **Updates:** To update the static status page content (e.g., changes to `public/index.html`), you must commit and push those changes to the production branch of this GitHub repository. Terraform manages the Pages project *configuration*, but Cloudflare Pages itself handles deployments based on repository changes.

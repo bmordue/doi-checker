@@ -133,3 +133,27 @@ variable "include_urls_in_notifications" {
   type        = bool
   default     = true
 }
+
+variable "pages_project_name" {
+  description = "Name for the Cloudflare Pages project that will host the static status page."
+  type        = string
+  default     = "doi-checker-status-page"
+}
+
+variable "github_repo_owner" {
+  description = "The owner (username or organization) of the GitHub repository for Cloudflare Pages."
+  type        = string
+  default     = "bmordue"
+}
+
+variable "github_repo_name" {
+  description = "The name of the GitHub repository for Cloudflare Pages."
+  type        = string
+  default     = "doi-checker"
+}
+
+variable "production_branch_name" {
+  description = "The name of the production branch in the GitHub repository that Cloudflare Pages will deploy from."
+  type        = string
+  default     = "main"
+}
