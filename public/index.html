@@ -182,7 +182,15 @@
                         const tbody = table.createTBody();
                         data.dois.forEach(doiStatus => {
                             const row = tbody.insertRow();
-                            row.insertCell().textContent = doiStatus.doi || 'N/A';
+                            const doiCell = row.insertCell();
+                            if (doiStatus.doi) {
+                                const link = document.createElement('a');
+                                link.href = 'https://doi.org/' + doiStatus.doi;
+                                link.textContent = doiStatus.doi;
+                                doiCell.appendChild(link);
+                            } else {
+                                doiCell.textContent = 'N/A';
+                            }
                             row.insertCell().textContent = doiStatus.lastCheck ? new Date(doiStatus.lastCheck).toLocaleString() : 'N/A';
                             const statusCell = row.insertCell();
                             if (doiStatus.working === true) {
