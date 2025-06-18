@@ -73,6 +73,11 @@
     </div>
     <div id="spinner" class="spinner-hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background-color: rgba(0,0,0,0.7); color: white; border-radius: 8px;"><div class="loader"></div></div>
     <h1>DOI Checker Status</h1>
+    <div id="url-submission-container">
+        <input type="text" id="url-input" placeholder="Enter URL to scan for DOIs">
+        <button id="submit-url-button">Submit URL</button>
+        <div id="submission-feedback"></div> <!-- To display messages to the user -->
+    </div>
     <div id="summary-container">
         <!-- Summary information will be populated here -->
     </div>
@@ -248,8 +253,72 @@
                 alert(`Error during refresh: ${error.message}`);
                 hideSpinner(); // Ensure spinner is hidden if /check-now fails before calling fetchStatusAndDisplay
             });
-            // Note: fetchStatusAndDisplay has its own finally(hideSpinner),
-            // so the spinner will hide once the status update is also complete.
+
+        // New script logic for URL submission
+        const urlInput = document.getElementById('url-input');
+        const submitUrlButton = document.getElementById('submit-url-button');
+        const submissionFeedback = document.getElementById('submission-feedback');
+
+        submitUrlButton.addEventListener('click', async () => {
+            submissionFeedback.innerHTML = '';
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                submissionFeedback.innerHTML = '<p style="color: red;">Please enter a URL.</p>';
+                return;
+            }
+
+            submissionFeedback.innerHTML = '<p>Processing...</p>';
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+                }
+                const htmlText = await response.text();
+
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlText;
+                const links = Array.from(tempDiv.getElementsByTagName('a'));
+                const doiLinks = links.filter(link => link.href && link.href.startsWith('https://doi.org/'));
+
+                if (doiLinks.length === 0) {
+                    submissionFeedback.innerHTML = '<p>No DOI links found on the page.</p>';
+                    return;
+                }
+
+                submissionFeedback.innerHTML = `<p>Found ${doiLinks.length} DOI link(s). Submitting...</p>`;
+                let successfulSubmissions = 0;
+                let failedSubmissions = 0;
+
+                for (const link of doiLinks) {
+                    const doi = link.href.substring('https://doi.org/'.length);
+                    try {
+                        const postResponse = await fetch('/add-doi', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ doi: doi })
+                        });
+                        const result = await postResponse.json();
+                        if (postResponse.ok) {
+                            submissionFeedback.innerHTML += `<p>Successfully submitted DOI: ${doi}</p>`;
+                            successfulSubmissions++;
+                        } else {
+                            submissionFeedback.innerHTML += `<p style="color: red;">Failed to submit DOI: ${doi}. Error: ${result.message || 'Unknown error'}</p>`;
+                            failedSubmissions++;
+                        }
+                    } catch (error) {
+                        submissionFeedback.innerHTML += `<p style="color: red;">Error submitting DOI: ${doi}. ${error.message}</p>`;
+                        failedSubmissions++;
+                    }
+                }
+
+                submissionFeedback.innerHTML += `<p><strong>Submission complete.</strong> Successful: ${successfulSubmissions}, Failed: ${failedSubmissions}.</p>`;
+                // Optionally, refresh the status table
+                // fetchStatus(); // You would need to wrap the status fetching logic in a function
+            } catch (error) {
+                submissionFeedback.innerHTML = `<p style="color: red;">Error processing URL: ${error.message}</p>`;
+            }
         });
 
         // Initial load of status
