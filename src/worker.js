@@ -194,13 +194,43 @@ async function checkAllDOIs(env, log) {
 
     // Update status in KV for each DOI
     for (const result of results) {
+      // Retrieve existing status
+      const existingStatusJson = await env.STATUS.get(result.doi);
+      let existingStatus = {};
+      if (existingStatusJson) {
+        try {
+          existingStatus = JSON.parse(existingStatusJson);
+        } catch (error) {
+          log.warn(`Error parsing existing status for DOI ${result.doi}`, {
+            error: error.message,
+          });
+        }
+      }
+
+      // Initialize new timestamps if they don't exist
+      const firstCheckedTimestamp = existingStatus.firstCheckedTimestamp || result.timestamp;
+      let firstFailureTimestamp = existingStatus.firstFailureTimestamp;
+      let firstSuccessTimestamp = existingStatus.firstSuccessTimestamp;
+
+      if (!result.working && !firstFailureTimestamp) {
+        firstFailureTimestamp = result.timestamp;
+      }
+      if (result.working && !firstSuccessTimestamp) {
+        firstSuccessTimestamp = result.timestamp;
+      }
+
       await env.STATUS.put(
         result.doi,
         JSON.stringify({
-          lastCheck: new Date().toISOString(),
+          // Preserve existing timestamps
+          ...existingStatus,
+          lastCheck: result.timestamp, // Use timestamp from check result
           working: result.working,
           httpStatus: result.httpStatus,
           error: result.error || null,
+          firstCheckedTimestamp: firstCheckedTimestamp,
+          firstFailureTimestamp: firstFailureTimestamp,
+          firstSuccessTimestamp: firstSuccessTimestamp,
         })
       );
     }
@@ -389,7 +419,13 @@ async function getStatus(env, log) {
       try {
         status = statusJson
           ? JSON.parse(statusJson)
-          : { working: null, lastCheck: null };
+          : {
+              working: null,
+              lastCheck: null,
+              firstCheckedTimestamp: null,
+              firstFailureTimestamp: null,
+              firstSuccessTimestamp: null
+            }; // Initialize with null for new fields if no status found
       } catch (error) {
         log.warn(`Error parsing status for DOI ${doi}`, {
           error: error.message,
@@ -397,13 +433,16 @@ async function getStatus(env, log) {
         status = {
           working: null,
           lastCheck: null,
+          firstCheckedTimestamp: null,
+          firstFailureTimestamp: null,
+          firstSuccessTimestamp: null,
           error: "Status data corrupted",
         };
       }
 
       statuses.push({
         doi: doi,
-        ...status,
+        ...status, // Spread the entire status object which includes the new timestamps
       });
     }
 
