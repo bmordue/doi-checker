@@ -19,14 +19,7 @@ export default {
     commonjs(),
     nodeResolve({ browser: true }),
     string({
-      // Required to be specified
-      include: "**/*.html",
-
-      // Default: false
-      minify: false,
-
-      // Default: undefined
-      minifierOptions: {}
+      include: "public/**/*.html",
     }),
     copy({
       targets: [{ src: './src/slug.txt', dest: './dist/' }],
