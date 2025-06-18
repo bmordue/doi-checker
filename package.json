@@ -28,6 +28,7 @@
     "miniflare": "^4.20250604.1",
     "rollup": "^4.43.0",
     "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-string": "^3.0.0",
     "vite-plugin-cloudflare": "^0.4.1",
     "vitest": "^3.2.3",
     "wrangler": "^4.20.0"

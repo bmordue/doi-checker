@@ -16,9 +16,62 @@
         .status-working { color: green; }
         .status-broken { color: red; }
         .status-unchecked { color: orange; }
+
+        #controls-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px; /* Already there via inline, but good to have in main CSS */
+        }
+
+        #doi-input {
+            flex-grow: 1; /* Allow input to take available space */
+            margin-right: 10px; /* Keep existing margin */
+            padding: 8px; /* Keep existing padding */
+            border: 1px solid #ccc; /* Keep existing border */
+            border-radius: 4px; /* Keep existing border-radius */
+        }
+
+        /* Basic button styling (can be refined if specific button styles are needed beyond inline) */
+        /* The inline styles for buttons are quite specific, so we might not need much here unless we want hover effects etc. */
+
+        #spinner {
+            /* Inline styles already set: position, top, left, transform, padding, background, color, border-radius */
+            /* We'll add a class to control visibility instead of direct style manipulation for display */
+            z-index: 1000; /* Ensure it's on top of other elements */
+        }
+
+        .spinner-hidden {
+            display: none !important; /* Use important to override inline style if needed */
+        }
+
+        .spinner-visible {
+            display: block !important; /* Or flex, depending on spinner content */
+        }
+
+        /* A simple CSS spinner animation */
+        .loader {
+            border: 5px solid #f3f3f3; /* Light grey */
+            border-top: 5px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto; /* Center if block */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div id="controls-container" style="margin-bottom: 20px;">
+        <input type="text" id="doi-input" placeholder="Enter DOI" style="margin-right: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+        <button id="submit-doi-button" style="padding: 8px 12px; border: 1px solid #007bff; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer;">Submit</button>
+        <button id="refresh-button" style="padding: 8px 12px; border: 1px solid #17a2b8; background-color: #17a2b8; color: white; border-radius: 4px; cursor: pointer; margin-left: 10px;">Refresh</button>
+    </div>
+    <div id="spinner" class="spinner-hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background-color: rgba(0,0,0,0.7); color: white; border-radius: 8px;"><div class="loader"></div></div>
     <h1>DOI Checker Status</h1>
     <div id="url-submission-container">
         <input type="text" id="url-input" placeholder="Enter URL to scan for DOIs">
@@ -36,77 +89,169 @@
     document.addEventListener('DOMContentLoaded', () => {
         const statusContainer = document.getElementById('status-container');
         const summaryContainer = document.getElementById('summary-container');
+        const baseUrl = 'https://doi-checker.pentland.workers.dev';
 
-        fetch('/status')
+        const doiInput = document.getElementById('doi-input');
+        const submitDoiButton = document.getElementById('submit-doi-button');
+        const refreshButton = document.getElementById('refresh-button');
+        const spinner = document.getElementById('spinner');
+
+        function showSpinner() {
+            spinner.classList.remove('spinner-hidden');
+            spinner.classList.add('spinner-visible');
+        }
+
+        function hideSpinner() {
+            spinner.classList.remove('spinner-visible');
+            spinner.classList.add('spinner-hidden');
+        }
+
+        submitDoiButton.addEventListener('click', () => {
+            const doiValue = doiInput.value.trim();
+
+            if (!doiValue) {
+                alert('Please enter a DOI.');
+                return;
+            }
+
+            showSpinner();
+
+            fetch(baseUrl + '/add-doi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ doi: doiValue }),
+            })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    // Try to get error message from response body if possible
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${text || 'No additional error message'}`);
+                    });
                 }
-                return response.json();
+                return response.json(); // Or response.text() if the server sends plain text
             })
             .then(data => {
-                // Clear loading message
-                statusContainer.innerHTML = '';
-                summaryContainer.innerHTML = '';
-
-                // Display summary
-                const summaryDiv = document.createElement('div');
-                summaryDiv.classList.add('summary');
-                summaryDiv.innerHTML = `
-                    <p><strong>Total DOIs:</strong> ${data.count}</p>
-                    <p><strong>Working:</strong> <span class="status-working">${data.working}</span></p>
-                    <p><strong>Broken:</strong> <span class="status-broken">${data.broken}</span></p>
-                    <p><strong>Unchecked:</strong> <span class="status-unchecked">${data.unchecked}</span></p>
-                `;
-                summaryContainer.appendChild(summaryDiv);
-
-                if (data.dois && data.dois.length > 0) {
-                    const table = document.createElement('table');
-                    table.classList.add('doi-table');
-
-                    // Table header
-                    const thead = table.createTHead();
-                    const headerRow = thead.insertRow();
-                    const headers = ['DOI', 'Last Check', 'Status', 'HTTP Status', 'Error'];
-                    headers.forEach(text => {
-                        const th = document.createElement('th');
-                        th.textContent = text;
-                        headerRow.appendChild(th);
-                    });
-
-                    // Table body
-                    const tbody = table.createTBody();
-                    data.dois.forEach(doiStatus => {
-                        const row = tbody.insertRow();
-
-                        row.insertCell().textContent = doiStatus.doi || 'N/A';
-                        row.insertCell().textContent = doiStatus.lastCheck ? new Date(doiStatus.lastCheck).toLocaleString() : 'N/A';
-
-                        const statusCell = row.insertCell();
-                        if (doiStatus.working === true) {
-                            statusCell.textContent = 'Working';
-                            statusCell.className = 'status-working';
-                        } else if (doiStatus.working === false) {
-                            statusCell.textContent = 'Broken';
-                            statusCell.className = 'status-broken';
-                        } else {
-                            statusCell.textContent = 'Unchecked';
-                            statusCell.className = 'status-unchecked';
-                        }
-
-                        row.insertCell().textContent = doiStatus.httpStatus || 'N/A';
-                        row.insertCell().textContent = doiStatus.error || 'N/A';
-                    });
-
-                    statusContainer.appendChild(table);
-                } else {
-                    statusContainer.innerHTML = '<p>No DOI statuses to display.</p>';
-                }
+                // Assuming the server sends back a JSON response with a message
+                alert(data.message || 'DOI submitted successfully!'); // Adjust based on actual server response
+                doiInput.value = ''; // Clear input field on success
             })
             .catch(error => {
-                console.error('Error fetching status:', error);
-                summaryContainer.innerHTML = ''; // Clear summary on error too
-                statusContainer.innerHTML = `<p style="color: red;">Error loading status: ${error.message}. See console for details.</p>`;
+                console.error('Error submitting DOI:', error);
+                alert(`Error submitting DOI: ${error.message}`);
+            })
+            .finally(() => {
+                hideSpinner();
+            });
+        });
+
+        function fetchStatusAndDisplay() {
+            showSpinner(); // Show spinner for status update
+            // Existing references like statusContainer, summaryContainer might need to be accessible
+            // or passed if this function is moved outside DOMContentLoaded scope.
+            // For now, assume they are accessible.
+
+            fetch(baseUrl + '/status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    statusContainer.innerHTML = '';
+                    summaryContainer.innerHTML = '';
+
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.classList.add('summary');
+                    summaryDiv.innerHTML = `
+                        <p><strong>Total DOIs:</strong> ${data.count}</p>
+                        <p><strong>Working:</strong> <span class="status-working">${data.working}</span></p>
+                        <p><strong>Broken:</strong> <span class="status-broken">${data.broken}</span></p>
+                        <p><strong>Unchecked:</strong> <span class="status-unchecked">${data.unchecked}</span></p>
+                    `;
+                    summaryContainer.appendChild(summaryDiv);
+
+                    if (data.dois && data.dois.length > 0) {
+                        const table = document.createElement('table');
+                        table.classList.add('doi-table');
+                        const thead = table.createTHead();
+                        const headerRow = thead.insertRow();
+                        const headers = ['DOI', 'Last Check', 'Status', 'HTTP Status', 'Error'];
+                        headers.forEach(text => {
+                            const th = document.createElement('th');
+                            th.textContent = text;
+                            headerRow.appendChild(th);
+                        });
+                        const tbody = table.createTBody();
+                        data.dois.forEach(doiStatus => {
+                            const row = tbody.insertRow();
+                            const doiCell = row.insertCell();
+                            if (doiStatus.doi) {
+                                const link = document.createElement('a');
+                                link.href = 'https://doi.org/' + doiStatus.doi;
+                                link.textContent = doiStatus.doi;
+                                doiCell.appendChild(link);
+                            } else {
+                                doiCell.textContent = 'N/A';
+                            }
+                            row.insertCell().textContent = doiStatus.lastCheck ? new Date(doiStatus.lastCheck).toLocaleString() : 'N/A';
+                            const statusCell = row.insertCell();
+                            if (doiStatus.working === true) {
+                                statusCell.textContent = 'Working';
+                                statusCell.className = 'status-working';
+                            } else if (doiStatus.working === false) {
+                                statusCell.textContent = 'Broken';
+                                statusCell.className = 'status-broken';
+                            } else {
+                                statusCell.textContent = 'Unchecked';
+                                statusCell.className = 'status-unchecked';
+                            }
+                            row.insertCell().textContent = doiStatus.httpStatus || 'N/A';
+                            row.insertCell().textContent = doiStatus.error || 'N/A';
+                        });
+                        statusContainer.appendChild(table);
+                    } else {
+                        statusContainer.innerHTML = '<p>No DOI statuses to display.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    summaryContainer.innerHTML = '';
+                    statusContainer.innerHTML = `<p style="color: red;">Error loading status: ${error.message}. See console for details.</p>`;
+                })
+                .finally(() => {
+                    hideSpinner(); // Hide spinner after status update is complete or failed
+                });
+        }
+
+        refreshButton.addEventListener('click', () => {
+            showSpinner(); // Show spinner for the /check-now operation
+
+            fetch(baseUrl + '/check-now', {
+                method: 'POST',
+                // No body needed for this request
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Try to get error message from response body
+                    return response.text().then(text => {
+                        throw new Error(`/check-now HTTP error! status: ${response.status}, message: ${text || 'No additional error message'}`);
+                    });
+                }
+                return response.json(); // Or response.text() if appropriate
+            })
+            .then(data => {
+                // console.log('/check-now success:', data); // Optional: log success
+                // Now fetch the updated status.
+                // fetchStatusAndDisplay() will handle its own spinner for the GET /status call.
+                fetchStatusAndDisplay();
+            })
+            .catch(error => {
+                console.error('Error during refresh (/check-now):', error);
+                alert(`Error during refresh: ${error.message}`);
+                hideSpinner(); // Ensure spinner is hidden if /check-now fails before calling fetchStatusAndDisplay
             });
 
         // New script logic for URL submission
@@ -175,6 +320,9 @@
                 submissionFeedback.innerHTML = `<p style="color: red;">Error processing URL: ${error.message}</p>`;
             }
         });
+
+        // Initial load of status
+        fetchStatusAndDisplay();
     });
     </script>
 </body>
