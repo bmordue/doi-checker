@@ -31,8 +31,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         const statusContainer = document.getElementById('status-container');
         const summaryContainer = document.getElementById('summary-container');
+        const baseUrl = 'https://doi-checker.pentland.workers.dev';
 
-        fetch('/status')
+        fetch(baseUrl + '/status')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
