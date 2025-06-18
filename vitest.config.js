@@ -17,6 +17,7 @@ export default defineConfig({
     // To allow mocking of global.fetch, ensure it's not frozen
     setupFiles: ['./tests/setup-vitest.js'], // A setup file if needed for global mocks
   },
+  assetsInclude: ['**/*.html'], // Add this line to treat HTML files as assets
   resolve: {
     // Required for Miniflare to resolve .js files as modules correctly
     mainFields: ['module', 'main'],
