@@ -25,7 +25,7 @@ export default {
     const requestId = crypto.randomUUID();
     const requestLogger = logger.createScopedLogger(`request:${requestId}`);
 
-    const corsHeaders = {
+    const headers = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
       "Access-Control-Max-Age": "86400",
@@ -63,7 +63,7 @@ export default {
       // Default response - API documentation
       return new Response(indexHtmlContent, {
         status: 200,
-        headers: corsHeaders,
+        headers: headers,
       });
     } catch (error) {
       requestLogger.error("Error handling request", {

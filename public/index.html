@@ -253,6 +253,7 @@
                 alert(`Error during refresh: ${error.message}`);
                 hideSpinner(); // Ensure spinner is hidden if /check-now fails before calling fetchStatusAndDisplay
             });
+        });
 
         // New script logic for URL submission
         const urlInput = document.getElementById('url-input');
