@@ -14,6 +14,7 @@ import { validateDOI } from "./lib/doi-validator.js";
 import { checkMultipleDOIs, processResults } from "./lib/checker.js";
 import { postBrokenDOIsToActivityPub } from "./lib/activitypub.js";
 import { DOI_CONFIG } from "./config/constants.js";
+import indexHtmlContent from '../public/index.html';
 
 export default {
   /**
@@ -53,13 +54,10 @@ export default {
       }
 
       // Default response - API documentation
-      return new Response(
-        "DOI Checker API\n/add-doi (POST)\n/remove-doi (POST)\n/check-now (POST)\n/status (GET)\n/health (GET)",
-        {
-          status: 200,
-          headers: { "Content-Type": "text/plain" },
-        }
-      );
+      return new Response(indexHtmlContent, {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      });
     } catch (error) {
       requestLogger.error("Error handling request", {
         error: error.message,
