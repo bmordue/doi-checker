@@ -178,7 +178,7 @@
                         table.classList.add('doi-table');
                         const thead = table.createTHead();
                         const headerRow = thead.insertRow();
-                        const headers = ['DOI', 'Last Check', 'Status', 'HTTP Status', 'Error'];
+                        const headers = ['DOI', 'Last Check', 'Status', 'HTTP Status', 'Error', 'First Checked', 'First Failure', 'First Success'];
                         headers.forEach(text => {
                             const th = document.createElement('th');
                             th.textContent = text;
@@ -210,6 +210,9 @@
                             }
                             row.insertCell().textContent = doiStatus.httpStatus || 'N/A';
                             row.insertCell().textContent = doiStatus.error || 'N/A';
+                            row.insertCell().textContent = doiStatus.firstCheckedTimestamp ? new Date(doiStatus.firstCheckedTimestamp).toLocaleString() : 'N/A';
+                            row.insertCell().textContent = doiStatus.firstFailureTimestamp ? new Date(doiStatus.firstFailureTimestamp).toLocaleString() : 'N/A';
+                            row.insertCell().textContent = doiStatus.firstSuccessTimestamp ? new Date(doiStatus.firstSuccessTimestamp).toLocaleString() : 'N/A';
                         });
                         statusContainer.appendChild(table);
                     } else {
