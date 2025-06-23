@@ -294,3 +294,132 @@ describe('Worker Timestamp Logic', () => {
     });
   });
 });
+
+describe('Worker addDOI endpoint', () => {
+  let mockEnv;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEnv = {
+      DOIS: {
+        get: vi.fn(),
+        put: vi.fn(),
+      },
+      STATUS: {
+        get: vi.fn(),
+        put: vi.fn(),
+        delete: vi.fn(),
+      },
+      ACTIVITYPUB_ENABLED: "false",
+      SNAC2_SERVER_URL: 'https://mock.activitypub.server',
+      SNAC2_TOKEN: 'mock-token',
+    };
+
+    if (global.crypto && typeof global.crypto.randomUUID === 'function') {
+      vi.spyOn(global.crypto, 'randomUUID').mockReturnValue('mock-uuid');
+    } else {
+      global.crypto = { ...global.crypto, randomUUID: vi.fn().mockReturnValue('mock-uuid') };
+    }
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should add a list of valid DOIs', async () => {
+    const doisToAdd = ['10.1000/xyz123', '10.1001/abc789'];
+    mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([])); // No existing DOIs
+
+    const request = new Request('http://localhost/add-doi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dois: doisToAdd }),
+    });
+
+    const response = await worker.fetch(request, mockEnv);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.message).toBe('DOI processing complete.');
+    expect(body.results.added).toEqual(doisToAdd);
+    expect(body.results.existing).toEqual([]);
+    expect(body.results.invalid).toEqual([]);
+    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doisToAdd));
+  });
+
+  it('should handle a mix of valid, invalid, and duplicate DOIs', async () => {
+    const existingDoi = '10.1000/xyz123';
+    const newValidDoi = '10.1001/abc789';
+    const invalidDoi = 'invalid-doi';
+    const doisToAdd = [existingDoi, newValidDoi, invalidDoi, 'https://doi.org/10.1002/efgh456']; // Includes a prefixed DOI
+
+    mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([existingDoi]));
+
+    const request = new Request('http://localhost/add-doi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dois: doisToAdd }),
+    });
+
+    const response = await worker.fetch(request, mockEnv);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.message).toBe('DOI processing complete.');
+    expect(body.results.added).toEqual([newValidDoi, '10.1002/efgh456']); // Prefixed DOI should be normalized
+    expect(body.results.existing).toEqual([existingDoi]);
+    expect(body.results.invalid.length).toBe(1);
+    expect(body.results.invalid[0].doi).toBe(invalidDoi);
+    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify([existingDoi, newValidDoi, '10.1002/efgh456']));
+  });
+
+  it('should handle an empty list of DOIs', async () => {
+    mockEnv.DOIS.get.mockResolvedValue(JSON.stringify(['10.1000/xyz123'])); // Existing DOIs
+
+    const request = new Request('http://localhost/add-doi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dois: [] }),
+    });
+
+    const response = await worker.fetch(request, mockEnv);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.message).toBe('DOI processing complete.');
+    expect(body.results.added).toEqual([]);
+    expect(body.results.existing).toEqual([]);
+    expect(body.results.invalid).toEqual([]);
+    // Ensure DOIS.put is called, even with an empty list, to maintain consistency (or decide if it shouldn't be called)
+    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(['10.1000/xyz123']));
+  });
+
+  it('should return 400 for invalid JSON format (not an array)', async () => {
+    const request = new Request('http://localhost/add-doi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dois: 'not-an-array' }), // Invalid format
+    });
+
+    const response = await worker.fetch(request, mockEnv);
+    expect(response.status).toBe(400); // Assuming ValidationError results in 400
+    const body = await response.json();
+    expect(body.error.message).toBe("Invalid input format: 'dois' must be an array.");
+    expect(mockEnv.DOIS.put).not.toHaveBeenCalled();
+  });
+
+    it('should return 400 for malformed JSON in request body', async () => {
+    const request = new Request('http://localhost/add-doi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"dois": ["10.123/abc"]', // Malformed JSON
+    });
+
+    const response = await worker.fetch(request, mockEnv);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.message).toBe("Invalid JSON in request body");
+    expect(mockEnv.DOIS.put).not.toHaveBeenCalled();
+  });
+});
