@@ -136,6 +136,7 @@
                 // Assuming the server sends back a JSON response with a message
                 alert(data.message || 'DOI submitted successfully!'); // Adjust based on actual server response
                 doiInput.value = ''; // Clear input field on success
+                fetchStatusAndDisplay(); // Refresh the DOI list and summary
             })
             .catch(error => {
                 console.error('Error submitting DOI:', error);
