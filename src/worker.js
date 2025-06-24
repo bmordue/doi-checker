@@ -291,14 +291,13 @@ export async function addDOI(request, env, log) {
       throw new ValidationError("Invalid JSON in request body");
     });
 
-    const { doi } = body;
+    const { dois } = body;
 
-    const validation = validateDOI(doi);
-    if (!validation.valid) {
-      return new Response(`Invalid DOI: ${validation.error}`, { status: 400 });
+    if (!Array.isArray(dois)) {
+      throw new ValidationError("Invalid input format: 'dois' must be an array.");
     }
 
-    log.info(`Adding DOI: ${doi}`);
+    log.info(`Adding ${dois.length} DOIs`);
 
     // Get current list
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
@@ -306,19 +305,36 @@ export async function addDOI(request, env, log) {
       ? safeJsonParse(doiListJson, "Invalid DOI list format")
       : [];
 
-    // Add if not already present
-    if (!doiList.includes(validation.normalized)) {
-      doiList.push(validation.normalized);
-      await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doiList));
-      log.info(`DOI added: ${doi}`);
-    } else {
-      log.info(`DOI already exists: ${doi}`);
+    const results = {
+      added: [],
+      existing: [],
+      invalid: [],
+    };
+
+    for (const doi of dois) {
+      const validation = validateDOI(doi);
+      if (!validation.valid) {
+        results.invalid.push({ doi, error: validation.error });
+        log.warn(`Invalid DOI: ${doi} - ${validation.error}`);
+        continue;
+      }
+
+      if (!doiList.includes(validation.normalized)) {
+        doiList.push(validation.normalized);
+        results.added.push(validation.normalized);
+        log.info(`DOI added: ${validation.normalized}`);
+      } else {
+        results.existing.push(validation.normalized);
+        log.info(`DOI already exists: ${validation.normalized}`);
+      }
     }
+
+    await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doiList));
 
     return new Response(
       JSON.stringify({
-        message: `DOI ${doi} added to monitoring list`,
-        doi: doi,
+        message: "DOI processing complete.",
+        results,
       }),
       {
         status: 200,
