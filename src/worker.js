@@ -291,14 +291,26 @@ export async function addDOI(request, env, log) {
       throw new ValidationError("Invalid JSON in request body");
     });
 
-    const { doi } = body;
+    const { doi, dois } = body; // Destructure both doi and dois
 
-    const validation = validateDOI(doi);
-    if (!validation.valid) {
-      return new Response(`Invalid DOI: ${validation.error}`, { status: 400 });
+    let doisToAdd = [];
+    if (doi) { // Handle single DOI for backward compatibility
+      log.warn("Received single 'doi' field, which is deprecated. Use 'dois' array instead.");
+      doisToAdd.push(doi);
+    } else if (dois && Array.isArray(dois)) {
+      doisToAdd = dois;
+    } else {
+      throw new ValidationError("Request body must contain a 'dois' array or a single 'doi' string.");
     }
 
-    log.info(`Adding DOI: ${doi}`);
+    if (doisToAdd.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No DOIs provided to add." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    log.info(`Attempting to add ${doisToAdd.length} DOIs.`);
 
     // Get current list
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
@@ -306,22 +318,47 @@ export async function addDOI(request, env, log) {
       ? safeJsonParse(doiListJson, "Invalid DOI list format")
       : [];
 
-    // Add if not already present
-    if (!doiList.includes(validation.normalized)) {
-      doiList.push(validation.normalized);
-      await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doiList));
-      log.info(`DOI added: ${doi}`);
-    } else {
-      log.info(`DOI already exists: ${doi}`);
+    const results = [];
+    let addedCount = 0;
+    let alreadyExistedCount = 0;
+    let invalidCount = 0;
+
+    for (const currentDoi of doisToAdd) {
+      const validation = validateDOI(currentDoi);
+      if (!validation.valid) {
+        log.warn(`Invalid DOI format: ${currentDoi}. Error: ${validation.error}`);
+        results.push({ doi: currentDoi, status: "invalid", error: validation.error });
+        invalidCount++;
+        continue;
+      }
+
+      const normalizedDoi = validation.normalized;
+      if (!doiList.includes(normalizedDoi)) {
+        doiList.push(normalizedDoi);
+        results.push({ doi: currentDoi, normalized: normalizedDoi, status: "added" });
+        addedCount++;
+        log.info(`DOI added: ${currentDoi} (normalized: ${normalizedDoi})`);
+      } else {
+        results.push({ doi: currentDoi, normalized: normalizedDoi, status: "already_existed" });
+        alreadyExistedCount++;
+        log.info(`DOI already exists: ${currentDoi} (normalized: ${normalizedDoi})`);
+      }
     }
+
+    if (addedCount > 0) {
+      await env.DOIS.put(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doiList));
+    }
+
+    const message = `Processed ${doisToAdd.length} DOIs: ${addedCount} added, ${alreadyExistedCount} already existed, ${invalidCount} invalid.`;
+    log.info(message);
 
     return new Response(
       JSON.stringify({
-        message: `DOI ${doi} added to monitoring list`,
-        doi: doi,
+        message: message,
+        results: results,
       }),
       {
-        status: 200,
+        status: 200, // Or 207 for Multi-Status if some failed, but 200 is fine with detailed results
         headers: { "Content-Type": "application/json" },
       }
     );
