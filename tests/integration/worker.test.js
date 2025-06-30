@@ -340,10 +340,12 @@ describe('Worker addDOI endpoint', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.message).toBe('DOI processing complete.');
-    expect(body.results.added).toEqual(doisToAdd);
-    expect(body.results.existing).toEqual([]);
-    expect(body.results.invalid).toEqual([]);
+    expect(body.message).toBe('Processed 2 DOIs: 2 added, 0 already existed, 0 invalid.');
+    // Check that the 'results' array contains the expected DOIs with status 'added'
+    expect(body.results.filter(r => r.status === 'added').map(r => r.normalized || r.doi)).toEqual(expect.arrayContaining(doisToAdd));
+    expect(body.results.filter(r => r.status === 'added').length).toBe(doisToAdd.length);
+    expect(body.results.filter(r => r.status === 'already_existed').length).toBe(0);
+    expect(body.results.filter(r => r.status === 'invalid').length).toBe(0);
     expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doisToAdd));
   });
 
@@ -351,7 +353,9 @@ describe('Worker addDOI endpoint', () => {
     const existingDoi = '10.1000/xyz123';
     const newValidDoi = '10.1001/abc789';
     const invalidDoi = 'invalid-doi';
-    const doisToAdd = [existingDoi, newValidDoi, invalidDoi, 'https://doi.org/10.1002/efgh456']; // Includes a prefixed DOI
+    const prefixedDoi = 'https://doi.org/10.1002/efgh456';
+    const normalizedPrefixedDoi = '10.1002/efgh456';
+    const doisToAdd = [existingDoi, newValidDoi, invalidDoi, prefixedDoi];
 
     mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([existingDoi]));
 
@@ -365,12 +369,23 @@ describe('Worker addDOI endpoint', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.message).toBe('DOI processing complete.');
-    expect(body.results.added).toEqual([newValidDoi, '10.1002/efgh456']); // Prefixed DOI should be normalized
-    expect(body.results.existing).toEqual([existingDoi]);
-    expect(body.results.invalid.length).toBe(1);
-    expect(body.results.invalid[0].doi).toBe(invalidDoi);
-    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify([existingDoi, newValidDoi, '10.1002/efgh456']));
+    expect(body.message).toBe('Processed 4 DOIs: 2 added, 1 already existed, 1 invalid.');
+    // Check added DOIs
+    const addedResults = body.results.filter(r => r.status === 'added');
+    expect(addedResults.length).toBe(2);
+    expect(addedResults.map(r => r.normalized || r.doi)).toEqual(expect.arrayContaining([newValidDoi, normalizedPrefixedDoi]));
+
+    // Check existing DOIs
+    const existingResults = body.results.filter(r => r.status === 'already_existed');
+    expect(existingResults.length).toBe(1);
+    expect(existingResults[0].doi).toBe(existingDoi);
+
+    // Check invalid DOIs
+    const invalidResults = body.results.filter(r => r.status === 'invalid');
+    expect(invalidResults.length).toBe(1);
+    expect(invalidResults[0].doi).toBe(invalidDoi);
+
+    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify([existingDoi, newValidDoi, normalizedPrefixedDoi]));
   });
 
   it('should handle an empty list of DOIs', async () => {
@@ -385,13 +400,10 @@ describe('Worker addDOI endpoint', () => {
     const response = await worker.fetch(request, mockEnv);
     const body = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(body.message).toBe('DOI processing complete.');
-    expect(body.results.added).toEqual([]);
-    expect(body.results.existing).toEqual([]);
-    expect(body.results.invalid).toEqual([]);
-    // Ensure DOIS.put is called, even with an empty list, to maintain consistency (or decide if it shouldn't be called)
-    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(['10.1000/xyz123']));
+    expect(response.status).toBe(400);
+    expect(body.message).toBe('No DOIs provided to add.');
+    // DOIS.put should not be called if no DOIs were provided to add.
+    expect(mockEnv.DOIS.put).not.toHaveBeenCalled();
   });
 
   it('should return 400 for invalid JSON format (not an array)', async () => {
@@ -404,7 +416,7 @@ describe('Worker addDOI endpoint', () => {
     const response = await worker.fetch(request, mockEnv);
     expect(response.status).toBe(400); // Assuming ValidationError results in 400
     const body = await response.json();
-    expect(body.error.message).toBe("Invalid input format: 'dois' must be an array.");
+    expect(body.error.message).toBe("Request body must contain a 'dois' array or a single 'doi' string.");
     expect(mockEnv.DOIS.put).not.toHaveBeenCalled();
   });
 

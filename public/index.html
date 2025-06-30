@@ -67,9 +67,9 @@
 </head>
 <body>
     <div id="controls-container" style="margin-bottom: 20px;">
-        <input type="text" id="doi-input" placeholder="Enter DOI" style="margin-right: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
-        <button id="submit-doi-button" style="padding: 8px 12px; border: 1px solid #007bff; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer;">Submit</button>
-        <button id="refresh-button" style="padding: 8px 12px; border: 1px solid #17a2b8; background-color: #17a2b8; color: white; border-radius: 4px; cursor: pointer; margin-left: 10px;">Refresh</button>
+        <textarea id="doi-input" placeholder="Enter DOIs, one per line" style="margin-right: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: calc(100% - 220px); min-height: 60px; vertical-align: middle;"></textarea>
+        <button id="submit-doi-button" style="padding: 8px 12px; border: 1px solid #007bff; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; vertical-align: middle;">Submit</button>
+        <button id="refresh-button" style="padding: 8px 12px; border: 1px solid #17a2b8; background-color: #17a2b8; color: white; border-radius: 4px; cursor: pointer; margin-left: 10px; vertical-align: middle;">Refresh</button>
     </div>
     <div id="spinner" class="spinner-hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background-color: rgba(0,0,0,0.7); color: white; border-radius: 8px;"><div class="loader"></div></div>
     <h1>DOI Checker Status</h1>
@@ -108,10 +108,10 @@
         }
 
         submitDoiButton.addEventListener('click', () => {
-            const doiValue = doiInput.value.trim();
+            const doiValues = doiInput.value.trim().split('\\n').map(doi => doi.trim()).filter(doi => doi);
 
-            if (!doiValue) {
-                alert('Please enter a DOI.');
+            if (doiValues.length === 0) {
+                alert('Please enter at least one DOI.');
                 return;
             }
 
@@ -122,7 +122,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ doi: doiValue }),
+                body: JSON.stringify({ dois: doiValues }),
             })
             .then(response => {
                 if (!response.ok) {
@@ -135,13 +135,12 @@
             })
             .then(data => {
                 // Assuming the server sends back a JSON response with a message
-                // alert(data.message || 'DOI submitted successfully!'); // Adjust based on actual server response
                 doiInput.value = ''; // Clear input field on success
                 fetchStatusAndDisplay(); // Refresh the DOI list and summary
             })
             .catch(error => {
-                console.error('Error submitting DOI:', error);
-                alert(`Error submitting DOI: ${error.message}`);
+                console.error('Error submitting DOIs:', error);
+                alert(`Error submitting DOIs: ${error.message}`);
             })
             .finally(() => {
                 hideSpinner();
