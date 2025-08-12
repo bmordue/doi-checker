@@ -27,9 +27,10 @@ A serverless tool for monitoring DOI links and posting status updates to Activit
 
 ## Documentation
 
-- [API Documentation](docs/API.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Configuration Options](docs/CONFIGURATION.md)
+- [📋 Project Roadmap](docs/ROADMAP.md) - Detailed development roadmap with phases, timelines, and success metrics
+- [📡 API Documentation](docs/API.md) - Complete API reference and usage examples
+- [🚀 Deployment Guide](docs/DEPLOYMENT.md) - Step-by-step deployment instructions
+- [⚙️ Configuration Options](docs/CONFIGURATION.md) - All configuration variables and settings
 
 ## Development
 
