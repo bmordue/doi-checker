@@ -7,10 +7,10 @@ DOI Checker is a serverless Cloudflare Worker application for monitoring DOI lin
 ## Working Effectively
 
 ### Bootstrap and Build
-- **Install dependencies:** `npm install` -- takes ~5 seconds. NEVER CANCEL. Set timeout to 60+ seconds.
+- **Install dependencies:** `npm install` -- takes ~13 seconds. NEVER CANCEL. Set timeout to 60+ seconds.
 - **Build the project:** `npm run build` -- takes ~500ms. Creates `terraform/dist/worker.js`.
-- **Run tests:** `npm test` -- takes ~2 seconds. NEVER CANCEL. Set timeout to 30+ seconds. Runs 76 tests.
-- **Run mutation tests:** `npx stryker run` -- takes 65 seconds. NEVER CANCEL. Set timeout to 120+ seconds.
+- **Run tests:** `npm test` -- takes ~1 second. NEVER CANCEL. Set timeout to 30+ seconds. Runs 76 tests.
+- **Run mutation tests:** `npx stryker run` -- takes 60 seconds. NEVER CANCEL. Set timeout to 120+ seconds.
 
 ### Development
 - **Local development server:** `npm run dev` -- starts Wrangler dev server on http://localhost:8787. Takes ~10 seconds to start.
@@ -35,8 +35,9 @@ DOI Checker is a serverless Cloudflare Worker application for monitoring DOI lin
    curl "http://localhost:8787/status"
    curl -X POST "http://localhost:8787/check"
    ```
-   - Expected: All endpoints return valid JSON responses
-   - Expected: Status page loads with HTML interface
+   - Expected: `/add-doi` returns JSON response with success message
+   - Expected: `/status` returns JSON with DOI status data
+   - Expected: `/check` returns HTML status page interface
    - Expected: DOI persists between API calls (shows in status after adding)
 
 2. **Build and Test Validation:**
@@ -54,6 +55,22 @@ DOI Checker is a serverless Cloudflare Worker application for monitoring DOI lin
    ```
    - Expected: Mutation testing completes successfully in ~65 seconds
    - Expected: Generates HTML report in `reports/mutation/`
+
+4. **Complete End-to-End Workflow Test:**
+   ```bash
+   # Test complete DOI workflow - start dev server in one terminal
+   npm run dev
+   
+   # Note the port from server output (usually 8787, but may vary)
+   # In another terminal, test complete workflow:
+   curl -X POST -H "Content-Type: application/json" -d '{"dois": ["10.1000/test123", "10.1001/example"]}' "http://localhost:8787/add-doi"
+   curl "http://localhost:8787/status" | grep -q "10.1000/test123" && echo "SUCCESS: DOI found in status"
+   curl -s "http://localhost:8787/check" | grep -q "DOI Checker Status" && echo "SUCCESS: Status page loads"
+   ```
+   - Expected: DOIs are successfully added and appear in status
+   - Expected: Status page loads with proper HTML interface 
+   - Expected: All API calls return appropriate responses without errors
+   - **Note:** Replace `8787` with actual port shown in dev server output if different
 
 ## Project Architecture
 
@@ -130,8 +147,8 @@ wrangler.toml           - Cloudflare Worker config
 ## Critical Warnings
 
 ### Timing Expectations
-- **npm install:** 10 seconds max - NEVER CANCEL
-- **npm test:** 5 seconds max - NEVER CANCEL  
+- **npm install:** 15 seconds max - NEVER CANCEL
+- **npm test:** 2 seconds max - NEVER CANCEL  
 - **npm run build:** 1 second max
 - **npx stryker run:** 70 seconds max - NEVER CANCEL
 - **npm run dev:** 10 seconds to start
