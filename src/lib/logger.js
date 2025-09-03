@@ -8,7 +8,7 @@ export const LOG_LEVELS = {
   DEBUG: 0,
   INFO: 1,
   WARN: 2,
-  ERROR: 3
+  ERROR: 3,
 };
 
 // Default configuration
@@ -16,7 +16,7 @@ const defaultConfig = {
   minLevel: LOG_LEVELS.INFO,
   colorize: true,
   timestamps: true,
-  includeContext: true
+  includeContext: true,
 };
 
 // Singleton logger instance
@@ -43,28 +43,28 @@ export function configure(config = {}) {
  */
 function formatLogMessage(level, message, context = {}) {
   const parts = [];
-  
+
   // Add timestamp if enabled
   if (loggerConfig.timestamps) {
     parts.push(`[${new Date().toISOString()}]`);
   }
-  
+
   // Add log level
   parts.push(`[${level}]`);
-  
+
   // Add message
   parts.push(message);
-  
+
   // Add context if enabled and available
   if (loggerConfig.includeContext && Object.keys(context).length > 0) {
     try {
       const contextStr = JSON.stringify(context);
       parts.push(`- ${contextStr}`);
-    } catch (error) {
+    } catch {
       parts.push('- [Context serialization error]');
     }
   }
-  
+
   return parts.join(' ');
 }
 
@@ -122,7 +122,7 @@ export function createScopedLogger(scope) {
     debug: (message, context = {}) => debug(message, { ...context, scope }),
     info: (message, context = {}) => info(message, { ...context, scope }),
     warn: (message, context = {}) => warn(message, { ...context, scope }),
-    error: (message, context = {}) => error(message, { ...context, scope })
+    error: (message, context = {}) => error(message, { ...context, scope }),
   };
 }
 
@@ -133,5 +133,5 @@ export default {
   info,
   warn,
   error,
-  createScopedLogger
+  createScopedLogger,
 };

@@ -5,17 +5,20 @@ A serverless tool for monitoring DOI links and posting status updates to Activit
 ## Quick Start
 
 1. **Setup project dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Configure Terraform:**
+
    ```bash
    cp terraform/terraform.tfvars.example terraform/terraform.tfvars
    # Edit terraform.tfvars with your Cloudflare details
    ```
 
 3. **Deploy infrastructure:**
+
    ```bash
    ./scripts/deploy.sh
    ```

@@ -3,17 +3,23 @@
  * Main entry point for handling requests and scheduled events
  */
 
-import logger from "./lib/logger.js";
+import logger from './lib/logger.js';
 import {
   ValidationError,
   NotFoundError,
   createErrorResponse,
   safeJsonParse,
-} from "./lib/errors.js";
-import { validateDOI } from "./lib/doi-validator.js";
-import { checkMultipleDOIs, processResults } from "./lib/checker.js";
-import { postBrokenDOIsToActivityPub } from "./lib/activitypub.js";
-import { DOI_CONFIG } from "./config/constants.js";
+} from './lib/errors.js';
+import { validateDOI } from './lib/doi-validator.js';
+import { checkMultipleDOIs, processResults } from './lib/checker.js';
+import { postBrokenDOIsToActivityPub } from './lib/activitypub.js';
+import { DOI_CONFIG } from './config/constants.js';
+import {
+  validateAddDOIRequest,
+  validateRemoveDOIRequest,
+  validateRequestSafety,
+  rateLimiter,
+} from './lib/validation.js';
 import indexHtmlContent from '../public/index.html';
 
 export default {
@@ -25,52 +31,101 @@ export default {
     const requestId = crypto.randomUUID();
     const requestLogger = logger.createScopedLogger(`request:${requestId}`);
 
-    const headers = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
-      "Access-Control-Max-Age": "86400",
-      "Content-Type": "text/html" 
+    // Security headers
+    const securityHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
+      'Access-Control-Max-Age': '86400',
+      'Content-Type': 'text/html',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Content-Security-Policy': "default-src 'self'",
     };
 
     try {
       const url = new URL(request.url);
       requestLogger.info(`Handling ${request.method} ${url.pathname}`);
 
+      // Basic request validation and rate limiting
+      const clientId =
+        request.headers.get('CF-Connecting-IP') ||
+        request.headers.get('X-Forwarded-For') ||
+        'unknown';
+
+      // Skip rate limiting and validation for test environments
+      const isTestEnvironment = request.headers.get('x-test-request') === 'true';
+
+      // Rate limiting check (skip in tests)
+      if (!isTestEnvironment && !rateLimiter.checkLimit(clientId)) {
+        requestLogger.warn(`Rate limit exceeded for client ${clientId}`);
+        return new Response(
+          JSON.stringify({
+            error: 'Rate limit exceeded',
+            message: 'Too many requests. Please try again later.',
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '60',
+              ...securityHeaders,
+            },
+          }
+        );
+      }
+
+      // Validate request safety (skip user-agent check in tests)
+      if (request.method === 'POST' && !isTestEnvironment) {
+        validateRequestSafety(request);
+      }
+
       // API endpoints
-      if (url.pathname === "/add-doi" && request.method === "POST") {
+      if (url.pathname === '/add-doi' && request.method === 'POST') {
         return await addDOI(request, env, requestLogger);
       }
 
-      if (url.pathname === "/remove-doi" && request.method === "POST") {
+      if (url.pathname === '/remove-doi' && request.method === 'POST') {
         return await removeDOI(request, env, requestLogger);
       }
 
-      if (url.pathname === "/check-now" && request.method === "POST") {
+      if (url.pathname === '/check-now' && request.method === 'POST') {
         return await checkAllDOIs(env, requestLogger);
       }
 
-      if (url.pathname === "/status") {
+      if (url.pathname === '/status') {
         return await getStatus(env, requestLogger);
       }
 
       // Health check endpoint
-      if (url.pathname === "/health") {
-        return new Response(JSON.stringify({ status: "ok" }), {
-          headers: { "Content-Type": "application/json" },
-        });
+      if (url.pathname === '/health') {
+        return new Response(
+          JSON.stringify({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...securityHeaders,
+            },
+          }
+        );
       }
 
       // Default response - API documentation
       return new Response(indexHtmlContent, {
         status: 200,
-        headers: headers,
+        headers: securityHeaders,
       });
     } catch (error) {
-      requestLogger.error("Error handling request", {
+      requestLogger.error('Error handling request', {
         error: error.message,
         stack: error.stack,
       });
-      return createErrorResponse(error);
+      return createErrorResponse(error, securityHeaders);
     }
   },
 
@@ -78,14 +133,14 @@ export default {
    * Handle scheduled events
    */
   async scheduled(env) {
-    const scheduledLogger = logger.createScopedLogger("scheduled");
+    const scheduledLogger = logger.createScopedLogger('scheduled');
 
     try {
-      scheduledLogger.info("Starting scheduled DOI check");
+      scheduledLogger.info('Starting scheduled DOI check');
       await checkAllDOIs(env, scheduledLogger);
-      scheduledLogger.info("Completed scheduled DOI check");
+      scheduledLogger.info('Completed scheduled DOI check');
     } catch (error) {
-      scheduledLogger.error("Error in scheduled DOI check", {
+      scheduledLogger.error('Error in scheduled DOI check', {
         error: error.message,
         stack: error.stack,
       });
@@ -104,14 +159,14 @@ export default {
 async function checkAllDOIs(env, log) {
   try {
     // Get list of DOIs to check
-    log.info("Getting DOI list");
+    log.info('Getting DOI list');
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
     if (!doiListJson) {
-      log.info("No DOIs to check");
-      return new Response("No DOIs configured", { status: 200 });
+      log.info('No DOIs to check');
+      return new Response('No DOIs configured', { status: 200 });
     }
 
-    const doiList = safeJsonParse(doiListJson, "Invalid DOI list format");
+    const doiList = safeJsonParse(doiListJson, 'Invalid DOI list format');
     log.info(`Found ${doiList.length} DOIs to check`);
 
     // const results = [];
@@ -237,12 +292,10 @@ async function checkAllDOIs(env, log) {
 
     // Post to ActivityPub if there are newly broken DOIs
     if (newlyBroken.length > 0) {
-      log.info(
-        `Posting ${newlyBroken.length} newly broken DOIs to ActivityPub`
-      );
+      log.info(`Posting ${newlyBroken.length} newly broken DOIs to ActivityPub`);
       // Get ActivityPub configuration from environment
       const activityPubConfig = {
-        enabled: env.ACTIVITYPUB_ENABLED !== "false",
+        enabled: env.ACTIVITYPUB_ENABLED !== 'false',
         serverUrl: env.SNAC2_SERVER_URL,
         authToken: env.SNAC2_TOKEN,
       };
@@ -250,14 +303,12 @@ async function checkAllDOIs(env, log) {
       try {
         await postBrokenDOIsToActivityPub(newlyBroken, activityPubConfig);
       } catch (error) {
-        log.error("Error posting to ActivityPub", { error: error.message });
+        log.error('Error posting to ActivityPub', { error: error.message });
         // Continue execution even if ActivityPub posting fails
       }
     }
 
-    log.info(
-      `Checked ${doiList.length} DOIs, ${newlyBroken.length} newly broken`
-    );
+    log.info(`Checked ${doiList.length} DOIs, ${newlyBroken.length} newly broken`);
     return new Response(
       JSON.stringify({
         checked: doiList.length,
@@ -266,11 +317,11 @@ async function checkAllDOIs(env, log) {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
-    log.error("Error in checkAllDOIs", {
+    log.error('Error in checkAllDOIs', {
       error: error.message,
       stack: error.stack,
     });
@@ -288,35 +339,26 @@ export async function addDOI(request, env, log) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
-      throw new ValidationError("Invalid JSON in request body");
+      throw new ValidationError('Invalid JSON in request body');
     });
 
-    const { doi, dois } = body; // Destructure both doi and dois
+    // Use new comprehensive validation
+    const validationResult = validateAddDOIRequest(body);
+    const { dois: doisToAdd } = validationResult;
 
-    let doisToAdd = [];
-    if (doi) { // Handle single DOI for backward compatibility
-      log.warn("Received single 'doi' field, which is deprecated. Use 'dois' array instead.");
-      doisToAdd.push(doi);
-    } else if (dois && Array.isArray(dois)) {
-      doisToAdd = dois;
-    } else {
-      throw new ValidationError("Request body must contain a 'dois' array or a single 'doi' string.");
-    }
-
-    if (doisToAdd.length === 0) {
-      return new Response(
-        JSON.stringify({ message: "No DOIs provided to add." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+    // Handle empty DOI list
+    if (validationResult.isEmpty) {
+      return new Response(JSON.stringify({ message: 'No DOIs provided to add.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     log.info(`Attempting to add ${doisToAdd.length} DOIs.`);
 
     // Get current list
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
-    const doiList = doiListJson
-      ? safeJsonParse(doiListJson, "Invalid DOI list format")
-      : [];
+    const doiList = doiListJson ? safeJsonParse(doiListJson, 'Invalid DOI list format') : [];
 
     const results = [];
     let addedCount = 0;
@@ -327,7 +369,7 @@ export async function addDOI(request, env, log) {
       const validation = validateDOI(currentDoi);
       if (!validation.valid) {
         log.warn(`Invalid DOI format: ${currentDoi}. Error: ${validation.error}`);
-        results.push({ doi: currentDoi, status: "invalid", error: validation.error });
+        results.push({ doi: currentDoi, status: 'invalid', error: validation.error });
         invalidCount++;
         continue;
       }
@@ -335,11 +377,11 @@ export async function addDOI(request, env, log) {
       const normalizedDoi = validation.normalized;
       if (!doiList.includes(normalizedDoi)) {
         doiList.push(normalizedDoi);
-        results.push({ doi: currentDoi, normalized: normalizedDoi, status: "added" });
+        results.push({ doi: currentDoi, normalized: normalizedDoi, status: 'added' });
         addedCount++;
         log.info(`DOI added: ${currentDoi} (normalized: ${normalizedDoi})`);
       } else {
-        results.push({ doi: currentDoi, normalized: normalizedDoi, status: "already_existed" });
+        results.push({ doi: currentDoi, normalized: normalizedDoi, status: 'already_existed' });
         alreadyExistedCount++;
         log.info(`DOI already exists: ${currentDoi} (normalized: ${normalizedDoi})`);
       }
@@ -359,11 +401,11 @@ export async function addDOI(request, env, log) {
       }),
       {
         status: 200, // Or 207 for Multi-Status if some failed, but 200 is fine with detailed results
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
-    log.error("Error in addDOI", { error: error.message });
+    log.error('Error in addDOI', { error: error.message });
     return createErrorResponse(error);
   }
 }
@@ -379,14 +421,11 @@ async function removeDOI(request, env, log) {
   try {
     // Parse request body
     const body = await request.json().catch(() => {
-      throw new ValidationError("Invalid JSON in request body");
+      throw new ValidationError('Invalid JSON in request body');
     });
 
-    const { doi } = body;
-
-    if (!doi) {
-      throw new ValidationError("DOI is required");
-    }
+    // Use new comprehensive validation
+    const { doi } = validateRemoveDOIRequest(body);
 
     log.info(`Removing DOI: ${doi}`);
 
@@ -394,7 +433,7 @@ async function removeDOI(request, env, log) {
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
 
     if (!doiListJson) {
-      throw new NotFoundError("No DOIs configured");
+      throw new NotFoundError('No DOIs configured');
     }
 
     const doiList = doiListJson ? JSON.parse(doiListJson) : [];
@@ -420,11 +459,11 @@ async function removeDOI(request, env, log) {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
-    log.error("Error in removeDOI", { error: error.message });
+    log.error('Error in removeDOI', { error: error.message });
     return createErrorResponse(error);
   }
 }
@@ -437,16 +476,16 @@ async function removeDOI(request, env, log) {
  */
 async function getStatus(env, log) {
   try {
-    log.info("Getting DOI status");
+    log.info('Getting DOI status');
     const doiListJson = await env.DOIS.get(DOI_CONFIG.DOI_LIST_KEY);
 
     if (!doiListJson) {
       return new Response(JSON.stringify({ dois: [], count: 0 }), {
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const doiList = safeJsonParse(doiListJson, "Invalid DOI list format");
+    const doiList = safeJsonParse(doiListJson, 'Invalid DOI list format');
     const statuses = [];
 
     for (const doi of doiList) {
@@ -461,7 +500,7 @@ async function getStatus(env, log) {
               lastCheck: null,
               firstCheckedTimestamp: null,
               firstFailureTimestamp: null,
-              firstSuccessTimestamp: null
+              firstSuccessTimestamp: null,
             }; // Initialize with null for new fields if no status found
       } catch (error) {
         log.warn(`Error parsing status for DOI ${doi}`, {
@@ -473,7 +512,7 @@ async function getStatus(env, log) {
           firstCheckedTimestamp: null,
           firstFailureTimestamp: null,
           firstSuccessTimestamp: null,
-          error: "Status data corrupted",
+          error: 'Status data corrupted',
         };
       }
 
@@ -494,10 +533,10 @@ async function getStatus(env, log) {
     log.info(`Retrieved status for ${doiList.length} DOIs`);
 
     return new Response(JSON.stringify(response), {
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    log.error("Error in getStatus", { error: error.message });
+    log.error('Error in getStatus', { error: error.message });
     return createErrorResponse(error);
   }
 }

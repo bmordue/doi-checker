@@ -1,8 +1,7 @@
- import { validateDOI  } from '../../src/lib/doi-validator';
- import { describe, it, expect } from 'vitest';
+import { validateDOI } from '../../src/lib/doi-validator';
+import { describe, it, expect } from 'vitest';
 
 describe('DOI Validator', () => {
-
   it('should return true for a valid DOI', () => {
     const validDoi = '10.1000/xyz123';
     expect(validateDOI(validDoi).valid).toBe(true);
