@@ -1,5 +1,4 @@
 import { defineConfig } from 'vitest/config';
-import cloudflarePagesPlugin from 'vite-plugin-cloudflare';
 
 export default defineConfig({
   // plugins: [cloudflarePagesPlugin({ scriptPath: './src/worker.js', modules: true })],
