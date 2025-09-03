@@ -25,12 +25,11 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@stryker-mutator/core": "^9.1.1",
     "@stryker-mutator/vitest-runner": "^9.1.1",
-    "miniflare": "^4.20250604.1",
-    "rollup": "^4.43.0",
+    "miniflare": "^4.20250829.0",
+    "rollup": "^4.50.0",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-string": "^3.0.0",
-    "vite-plugin-cloudflare": "^0.4.1",
     "vitest": "^3.2.4",
-    "wrangler": "^4.20.0"
+    "wrangler": "^4.33.2"
   }
 }
