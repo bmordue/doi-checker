@@ -14,13 +14,13 @@ export class AppError extends Error {
     this.code = options.code || 'INTERNAL_ERROR';
     this.context = options.context || {};
     this.cause = options.cause;
-    
+
     // Maintains proper stack trace for where error was thrown
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
   }
-  
+
   /**
    * Format the error for API response
    * @returns {Object} - Error response object
@@ -30,8 +30,10 @@ export class AppError extends Error {
       error: {
         message: this.message,
         code: this.code,
-        ...(process.env.NODE_ENV !== 'production' ? { context: this.context } : {})
-      }
+        ...(typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'
+          ? { context: this.context }
+          : {}),
+      },
     };
   }
 }
@@ -41,10 +43,10 @@ export class AppError extends Error {
  */
 export class ValidationError extends AppError {
   constructor(message, options = {}) {
-    super(message, { 
-      status: 400, 
+    super(message, {
+      status: 400,
       code: 'VALIDATION_ERROR',
-      ...options 
+      ...options,
     });
   }
 }
@@ -54,10 +56,10 @@ export class ValidationError extends AppError {
  */
 export class NotFoundError extends AppError {
   constructor(message, options = {}) {
-    super(message || 'Resource not found', { 
-      status: 404, 
+    super(message || 'Resource not found', {
+      status: 404,
       code: 'NOT_FOUND',
-      ...options 
+      ...options,
     });
   }
 }
@@ -67,10 +69,10 @@ export class NotFoundError extends AppError {
  */
 export class ExternalServiceError extends AppError {
   constructor(message, options = {}) {
-    super(message, { 
-      status: 502, 
+    super(message, {
+      status: 502,
       code: 'EXTERNAL_SERVICE_ERROR',
-      ...options 
+      ...options,
     });
   }
 }
@@ -89,11 +91,11 @@ export function withErrorHandling(fn) {
       if (error instanceof AppError) {
         throw error;
       }
-      
+
       // Otherwise, wrap it in an AppError
       throw new AppError(error.message, {
         cause: error,
-        context: { args: args.map(arg => String(arg).substring(0, 100)) }
+        context: { args: args.map((arg) => String(arg).substring(0, 100)) },
       });
     }
   };
@@ -104,15 +106,27 @@ export function withErrorHandling(fn) {
  * @param {Error} error - The error to format
  * @returns {Response} - Formatted error response
  */
-export function createErrorResponse(error) {
+export function createErrorResponse(error, additionalHeaders = {}) {
   const status = error instanceof AppError ? error.status : 500;
-  const body = error instanceof AppError 
-    ? error.toResponse()
-    : { error: { message: 'An unexpected error occurred', code: 'INTERNAL_ERROR' } };
-  
+  const body =
+    error instanceof AppError
+      ? error.toResponse()
+      : { error: { message: 'An unexpected error occurred', code: 'INTERNAL_ERROR' } };
+
+  const defaultSecurityHeaders = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  };
+
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: {
+      'Content-Type': 'application/json',
+      ...defaultSecurityHeaders,
+      ...additionalHeaders,
+    },
   });
 }
 
@@ -126,12 +140,14 @@ export function formatErrorForLogging(error) {
     name: error.name,
     message: error.message,
     stack: error.stack,
-    ...(error instanceof AppError ? { 
-      status: error.status,
-      code: error.code,
-      context: error.context
-    } : {}),
-    ...(error.cause ? { cause: formatErrorForLogging(error.cause) } : {})
+    ...(error instanceof AppError
+      ? {
+          status: error.status,
+          code: error.code,
+          context: error.context,
+        }
+      : {}),
+    ...(error.cause ? { cause: formatErrorForLogging(error.cause) } : {}),
   };
 }
 

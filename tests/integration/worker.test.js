@@ -11,7 +11,7 @@ vi.mock('../../src/lib/checker.js', () => ({
   // For these tests, we mainly care that newlyBroken is an array (empty or not)
   processResults: vi.fn((results, previousStatuses) => {
     const newlyBroken = [];
-    results.forEach(result => {
+    results.forEach((result) => {
       const prev = previousStatuses[result.doi];
       if ((!prev || prev.working) && !result.working) {
         newlyBroken.push(result.doi);
@@ -25,8 +25,7 @@ vi.mock('../../src/lib/checker.js', () => ({
 }));
 
 // Import the mocked checkMultipleDOIs to use in tests
-import { checkMultipleDOIs, processResults } from '../../src/lib/checker.js';
-
+import { checkMultipleDOIs } from '../../src/lib/checker.js';
 
 describe('Worker Timestamp Logic', () => {
   let mockEnv;
@@ -44,7 +43,7 @@ describe('Worker Timestamp Logic', () => {
         delete: vi.fn(), // Not directly used here but good practice
       },
       // Mock other env properties worker might use during checkAllDOIs or getStatus
-      ACTIVITYPUB_ENABLED: "false", // Disable for these tests to simplify
+      ACTIVITYPUB_ENABLED: 'false', // Disable for these tests to simplify
       SNAC2_SERVER_URL: 'https://mock.activitypub.server',
       SNAC2_TOKEN: 'mock-token',
       // Add any other env vars that might be accessed to avoid undefined errors
@@ -55,9 +54,9 @@ describe('Worker Timestamp Logic', () => {
 
     // Mock crypto.randomUUID if your worker uses it for logging or other purposes
     if (global.crypto && typeof global.crypto.randomUUID === 'function') {
-        vi.spyOn(global.crypto, 'randomUUID').mockReturnValue('mock-uuid');
+      vi.spyOn(global.crypto, 'randomUUID').mockReturnValue('mock-uuid');
     } else {
-        global.crypto = { ...global.crypto, randomUUID: vi.fn().mockReturnValue('mock-uuid') };
+      global.crypto = { ...global.crypto, randomUUID: vi.fn().mockReturnValue('mock-uuid') };
     }
   });
 
@@ -73,13 +72,15 @@ describe('Worker Timestamp Logic', () => {
       mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([doi]));
       mockEnv.STATUS.get.mockResolvedValue(null); // No existing status
 
-      const mockCheckResults = [{
-        doi,
-        working: true,
-        httpStatus: 200,
-        timestamp: checkTimestamp,
-        finalUrl: `https://doi.org/${doi}`
-      }];
+      const mockCheckResults = [
+        {
+          doi,
+          working: true,
+          httpStatus: 200,
+          timestamp: checkTimestamp,
+          finalUrl: `https://doi.org/${doi}`,
+        },
+      ];
       checkMultipleDOIs.mockResolvedValue(mockCheckResults);
       // processResults mock will be called internally by checkAllDOIs
 
@@ -105,13 +106,15 @@ describe('Worker Timestamp Logic', () => {
       mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([doi]));
       mockEnv.STATUS.get.mockResolvedValue(null); // No existing status initially
 
-      let mockCheckResults = [{
-        doi,
-        working: false,
-        httpStatus: 404,
-        timestamp: firstCheckTimestamp,
-        error: 'Not Found'
-      }];
+      let mockCheckResults = [
+        {
+          doi,
+          working: false,
+          httpStatus: 404,
+          timestamp: firstCheckTimestamp,
+          error: 'Not Found',
+        },
+      ];
       checkMultipleDOIs.mockResolvedValue(mockCheckResults);
 
       await worker.scheduled(mockEnv);
@@ -127,13 +130,15 @@ describe('Worker Timestamp Logic', () => {
 
       // --- Second check (success) ---
       mockEnv.STATUS.get.mockResolvedValue(firstSavedStatusString); // Return previous status
-      mockCheckResults = [{
-        doi,
-        working: true,
-        httpStatus: 200,
-        timestamp: secondCheckTimestamp,
-        finalUrl: `https://doi.org/${doi}`
-      }];
+      mockCheckResults = [
+        {
+          doi,
+          working: true,
+          httpStatus: 200,
+          timestamp: secondCheckTimestamp,
+          finalUrl: `https://doi.org/${doi}`,
+        },
+      ];
       checkMultipleDOIs.mockResolvedValue(mockCheckResults);
       // processResults will be called again with the new results and previous status
 
@@ -158,13 +163,15 @@ describe('Worker Timestamp Logic', () => {
       mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([doi]));
       mockEnv.STATUS.get.mockResolvedValue(null);
 
-      let mockCheckResults = [{
-        doi,
-        working: true,
-        httpStatus: 200,
-        timestamp: firstCheckTimestamp,
-        finalUrl: `https://doi.org/${doi}`
-      }];
+      let mockCheckResults = [
+        {
+          doi,
+          working: true,
+          httpStatus: 200,
+          timestamp: firstCheckTimestamp,
+          finalUrl: `https://doi.org/${doi}`,
+        },
+      ];
       checkMultipleDOIs.mockResolvedValue(mockCheckResults);
 
       await worker.scheduled(mockEnv);
@@ -179,13 +186,15 @@ describe('Worker Timestamp Logic', () => {
 
       // --- Second check (failure) ---
       mockEnv.STATUS.get.mockResolvedValue(firstSavedStatusString);
-      mockCheckResults = [{
-        doi,
-        working: false,
-        httpStatus: 500,
-        timestamp: secondCheckTimestamp,
-        error: 'Server Error'
-      }];
+      mockCheckResults = [
+        {
+          doi,
+          working: false,
+          httpStatus: 500,
+          timestamp: secondCheckTimestamp,
+          error: 'Server Error',
+        },
+      ];
       checkMultipleDOIs.mockResolvedValue(mockCheckResults);
 
       await worker.scheduled(mockEnv);
@@ -213,18 +222,20 @@ describe('Worker Timestamp Logic', () => {
         firstCheckedTimestamp: originalFirstChecked,
         firstSuccessTimestamp: originalFirstSuccess,
         firstFailureTimestamp: originalFirstFailure,
-        error: "Some old error"
+        error: 'Some old error',
       };
       mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([doi]));
       mockEnv.STATUS.get.mockResolvedValue(JSON.stringify(existingStatus));
 
-      const mockCheckResults = [{
-        doi,
-        working: true, // New check is a success
-        httpStatus: 200,
-        timestamp: newCheckTimestamp,
-        finalUrl: `https://doi.org/${doi}`
-      }];
+      const mockCheckResults = [
+        {
+          doi,
+          working: true, // New check is a success
+          httpStatus: 200,
+          timestamp: newCheckTimestamp,
+          finalUrl: `https://doi.org/${doi}`,
+        },
+      ];
       checkMultipleDOIs.mockResolvedValue(mockCheckResults);
 
       await worker.scheduled(mockEnv);
@@ -252,7 +263,7 @@ describe('Worker Timestamp Logic', () => {
         firstCheckedTimestamp: now,
         firstSuccessTimestamp: now,
         firstFailureTimestamp: null, // Explicitly null
-        error: null
+        error: null,
       };
 
       mockEnv.DOIS.get.mockResolvedValue(JSON.stringify([doi]));
@@ -310,7 +321,7 @@ describe('Worker addDOI endpoint', () => {
         put: vi.fn(),
         delete: vi.fn(),
       },
-      ACTIVITYPUB_ENABLED: "false",
+      ACTIVITYPUB_ENABLED: 'false',
       SNAC2_SERVER_URL: 'https://mock.activitypub.server',
       SNAC2_TOKEN: 'mock-token',
     };
@@ -332,7 +343,10 @@ describe('Worker addDOI endpoint', () => {
 
     const request = new Request('http://localhost/add-doi', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-request': 'true',
+      },
       body: JSON.stringify({ dois: doisToAdd }),
     });
 
@@ -342,11 +356,16 @@ describe('Worker addDOI endpoint', () => {
     expect(response.status).toBe(200);
     expect(body.message).toBe('Processed 2 DOIs: 2 added, 0 already existed, 0 invalid.');
     // Check that the 'results' array contains the expected DOIs with status 'added'
-    expect(body.results.filter(r => r.status === 'added').map(r => r.normalized || r.doi)).toEqual(expect.arrayContaining(doisToAdd));
-    expect(body.results.filter(r => r.status === 'added').length).toBe(doisToAdd.length);
-    expect(body.results.filter(r => r.status === 'already_existed').length).toBe(0);
-    expect(body.results.filter(r => r.status === 'invalid').length).toBe(0);
-    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify(doisToAdd));
+    expect(
+      body.results.filter((r) => r.status === 'added').map((r) => r.normalized || r.doi)
+    ).toEqual(expect.arrayContaining(doisToAdd));
+    expect(body.results.filter((r) => r.status === 'added').length).toBe(doisToAdd.length);
+    expect(body.results.filter((r) => r.status === 'already_existed').length).toBe(0);
+    expect(body.results.filter((r) => r.status === 'invalid').length).toBe(0);
+    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(
+      DOI_CONFIG.DOI_LIST_KEY,
+      JSON.stringify(doisToAdd)
+    );
   });
 
   it('should handle a mix of valid, invalid, and duplicate DOIs', async () => {
@@ -361,7 +380,10 @@ describe('Worker addDOI endpoint', () => {
 
     const request = new Request('http://localhost/add-doi', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-request': 'true',
+      },
       body: JSON.stringify({ dois: doisToAdd }),
     });
 
@@ -371,21 +393,26 @@ describe('Worker addDOI endpoint', () => {
     expect(response.status).toBe(200);
     expect(body.message).toBe('Processed 4 DOIs: 2 added, 1 already existed, 1 invalid.');
     // Check added DOIs
-    const addedResults = body.results.filter(r => r.status === 'added');
+    const addedResults = body.results.filter((r) => r.status === 'added');
     expect(addedResults.length).toBe(2);
-    expect(addedResults.map(r => r.normalized || r.doi)).toEqual(expect.arrayContaining([newValidDoi, normalizedPrefixedDoi]));
+    expect(addedResults.map((r) => r.normalized || r.doi)).toEqual(
+      expect.arrayContaining([newValidDoi, normalizedPrefixedDoi])
+    );
 
     // Check existing DOIs
-    const existingResults = body.results.filter(r => r.status === 'already_existed');
+    const existingResults = body.results.filter((r) => r.status === 'already_existed');
     expect(existingResults.length).toBe(1);
     expect(existingResults[0].doi).toBe(existingDoi);
 
     // Check invalid DOIs
-    const invalidResults = body.results.filter(r => r.status === 'invalid');
+    const invalidResults = body.results.filter((r) => r.status === 'invalid');
     expect(invalidResults.length).toBe(1);
     expect(invalidResults[0].doi).toBe(invalidDoi);
 
-    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(DOI_CONFIG.DOI_LIST_KEY, JSON.stringify([existingDoi, newValidDoi, normalizedPrefixedDoi]));
+    expect(mockEnv.DOIS.put).toHaveBeenCalledWith(
+      DOI_CONFIG.DOI_LIST_KEY,
+      JSON.stringify([existingDoi, newValidDoi, normalizedPrefixedDoi])
+    );
   });
 
   it('should handle an empty list of DOIs', async () => {
@@ -393,7 +420,10 @@ describe('Worker addDOI endpoint', () => {
 
     const request = new Request('http://localhost/add-doi', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-request': 'true',
+      },
       body: JSON.stringify({ dois: [] }),
     });
 
@@ -409,21 +439,29 @@ describe('Worker addDOI endpoint', () => {
   it('should return 400 for invalid JSON format (not an array)', async () => {
     const request = new Request('http://localhost/add-doi', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-request': 'true',
+      },
       body: JSON.stringify({ dois: 'not-an-array' }), // Invalid format
     });
 
     const response = await worker.fetch(request, mockEnv);
     expect(response.status).toBe(400); // Assuming ValidationError results in 400
     const body = await response.json();
-    expect(body.error.message).toBe("Request body must contain a 'dois' array or a single 'doi' string.");
+    expect(body.error.message).toBe(
+      "Request body must contain a 'dois' array or a single 'doi' string."
+    );
     expect(mockEnv.DOIS.put).not.toHaveBeenCalled();
   });
 
-    it('should return 400 for malformed JSON in request body', async () => {
+  it('should return 400 for malformed JSON in request body', async () => {
     const request = new Request('http://localhost/add-doi', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-request': 'true',
+      },
       body: '{"dois": ["10.123/abc"]', // Malformed JSON
     });
 
@@ -431,7 +469,7 @@ describe('Worker addDOI endpoint', () => {
     const body = await response.json();
 
     expect(response.status).toBe(400);
-    expect(body.error.message).toBe("Invalid JSON in request body");
+    expect(body.error.message).toBe('Invalid JSON in request body');
     expect(mockEnv.DOIS.put).not.toHaveBeenCalled();
   });
 });

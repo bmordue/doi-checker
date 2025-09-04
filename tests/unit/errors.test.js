@@ -167,7 +167,7 @@ describe('errors.js', () => {
 
     test('should wrap generic Error in AppError with context', async () => {
       const errorMessage = 'Something went wrong';
-      const syncFn = (a, b) => {
+      const syncFn = (_a, _b) => {
         throw new Error(errorMessage);
       };
       const wrappedSyncFn = withErrorHandling(syncFn);
@@ -183,7 +183,7 @@ describe('errors.js', () => {
         // No logger check as withErrorHandling doesn't log itself
       }
 
-      const asyncFn = async (a, b) => {
+      const asyncFn = async (_a, _b) => {
         throw new Error(errorMessage);
       };
       const wrappedAsyncFn = withErrorHandling(asyncFn);
@@ -228,7 +228,11 @@ describe('errors.js', () => {
 
   describe('createErrorResponse', () => {
     test('should create response for AppError', async () => {
-      const error = new AppError('Test AppError', { status: 403, code: 'FORBIDDEN', context: { detail: 'test' } });
+      const error = new AppError('Test AppError', {
+        status: 403,
+        code: 'FORBIDDEN',
+        context: { detail: 'test' },
+      });
       const response = createErrorResponse(error);
 
       expect(response).toBeInstanceOf(Response);
@@ -238,11 +242,19 @@ describe('errors.js', () => {
       const body = await response.json();
       // In dev, context is included by toResponse()
       process.env.NODE_ENV = 'development';
-      await expect(createErrorResponse(error).json().then(b => b.error.context)).resolves.toEqual({detail: 'test'});
+      await expect(
+        createErrorResponse(error)
+          .json()
+          .then((b) => b.error.context)
+      ).resolves.toEqual({ detail: 'test' });
 
       // In prod, context is excluded
       process.env.NODE_ENV = 'production';
-      await expect(createErrorResponse(error).json().then(b => b.error.context)).resolves.toBeUndefined();
+      await expect(
+        createErrorResponse(error)
+          .json()
+          .then((b) => b.error.context)
+      ).resolves.toBeUndefined();
 
       // Restore for other tests
       process.env.NODE_ENV = 'test';
@@ -262,7 +274,7 @@ describe('errors.js', () => {
       expect(body).toEqual({
         error: {
           message: 'An unexpected error occurred', // Default message from createErrorResponse
-          code: 'INTERNAL_ERROR',          // Default code from createErrorResponse
+          code: 'INTERNAL_ERROR', // Default code from createErrorResponse
         },
       });
     });
@@ -331,10 +343,17 @@ describe('errors.js', () => {
       });
     });
 
-     test('should recursively format error with AppError cause', () => {
-      const rootCause = new AppError('Root AppError cause', {status: 400, code: 'BAD_REQUEST', context: {data: 'invalid'}});
+    test('should recursively format error with AppError cause', () => {
+      const rootCause = new AppError('Root AppError cause', {
+        status: 400,
+        code: 'BAD_REQUEST',
+        context: { data: 'invalid' },
+      });
       rootCause.stack = 'AppError: Root AppError cause\n    at root (root.js:1:1)';
-      const error = new AppError('Higher level error', { cause: rootCause, context: {userId: 1} });
+      const error = new AppError('Higher level error', {
+        cause: rootCause,
+        context: { userId: 1 },
+      });
       error.stack = 'AppError: Higher level error\n    at app (app.js:1:1)';
 
       const formatted = formatErrorForLogging(error);
@@ -344,14 +363,14 @@ describe('errors.js', () => {
         stack: 'AppError: Higher level error\n    at app (app.js:1:1)',
         status: 500,
         code: 'INTERNAL_ERROR',
-        context: {userId: 1},
+        context: { userId: 1 },
         cause: {
           name: 'AppError',
           message: 'Root AppError cause',
           stack: 'AppError: Root AppError cause\n    at root (root.js:1:1)',
           status: 400,
           code: 'BAD_REQUEST',
-          context: {data: 'invalid'},
+          context: { data: 'invalid' },
         },
       });
     });

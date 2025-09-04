@@ -13,12 +13,12 @@ const log = logger.createScopedLogger('doi-validator');
 const DOI_PATTERNS = {
   // Basic pattern: 10.xxxx/yyyy
   BASIC: /^10\.\d{4,}\/\S+$/,
-  
+
   // Strict pattern with more validation
   STRICT: /^10\.\d{4,}\/[a-zA-Z0-9()[\]:.;\-_/]+$/,
-  
+
   // Leading DOI prefix (remove if present)
-  PREFIX: /^(?:doi:|https?:\/\/(?:dx\.)?doi\.org\/)(10\..+)$/i
+  PREFIX: /^(?:doi:|https?:\/\/(?:dx\.)?doi\.org\/)(10\..+)$/i,
 };
 
 /**
@@ -28,16 +28,16 @@ const DOI_PATTERNS = {
  */
 export function normalizeDOI(doi) {
   if (!doi) return '';
-  
+
   // Trim whitespace
   let normalizedDOI = doi.trim();
-  
+
   // Remove DOI prefix if present
   const prefixMatch = normalizedDOI.match(DOI_PATTERNS.PREFIX);
   if (prefixMatch) {
     normalizedDOI = prefixMatch[1];
   }
-  
+
   return normalizedDOI;
 }
 
@@ -50,10 +50,10 @@ export function normalizeDOI(doi) {
  */
 export function isValidDOI(doi, options = {}) {
   if (!doi) return false;
-  
+
   const normalizedDOI = normalizeDOI(doi);
   const pattern = options.strict ? DOI_PATTERNS.STRICT : DOI_PATTERNS.BASIC;
-  
+
   return pattern.test(normalizedDOI);
 }
 
@@ -68,61 +68,61 @@ export function isValidDOI(doi, options = {}) {
  */
 export function validateDOI(doi, options = {}) {
   log.debug(`Validating DOI: ${doi}`);
-  
+
   if (!doi || typeof doi !== 'string') {
     const error = 'DOI must be a non-empty string';
     log.warn(error, { doi });
-    
+
     if (options.throwOnError) {
       throw new ValidationError(error);
     }
-    
+
     return {
       valid: false,
-      error
+      error,
     };
   }
 
   // Normalize the DOI
   const normalizedDOI = normalizeDOI(doi);
-  
+
   // Check if normalization yielded an empty string
   if (!normalizedDOI) {
     const error = 'DOI is empty after normalization';
     log.warn(error, { doi, normalizedDOI });
-    
+
     if (options.throwOnError) {
       throw new ValidationError(error);
     }
-    
+
     return {
       valid: false,
-      error
+      error,
     };
   }
-  
+
   // Check basic pattern
   const pattern = options.strict ? DOI_PATTERNS.STRICT : DOI_PATTERNS.BASIC;
   if (!pattern.test(normalizedDOI)) {
     const patternType = options.strict ? 'strict' : 'basic';
     const error = `Invalid DOI format. DOI must match ${patternType} pattern: 10.xxxx/yyyy`;
     log.warn(error, { doi, normalizedDOI, patternType });
-    
+
     if (options.throwOnError) {
       throw new ValidationError(error);
     }
-    
+
     return {
       valid: false,
-      error
+      error,
     };
   }
-  
+
   log.debug(`DOI validation successful: ${normalizedDOI}`);
   return {
     valid: true,
     normalized: normalizedDOI,
-    original: doi
+    original: doi,
   };
 }
 
@@ -135,20 +135,20 @@ export function validateDOI(doi, options = {}) {
 export function parseDOI(doi) {
   const validation = validateDOI(doi, { throwOnError: true });
   const normalizedDOI = validation.normalized;
-  
+
   // Split the DOI into prefix and suffix
   const [prefix, ...suffixParts] = normalizedDOI.split('/');
   const suffix = suffixParts.join('/');
-  
+
   // Extract the registry number from the prefix
   const registryNumber = prefix.replace(/^10\./, '');
-  
+
   return {
     doi: normalizedDOI,
     prefix,
     suffix,
     registryNumber,
-    url: `https://doi.org/${normalizedDOI}`
+    url: `https://doi.org/${normalizedDOI}`,
   };
 }
 
@@ -156,5 +156,5 @@ export default {
   normalizeDOI,
   isValidDOI,
   validateDOI,
-  parseDOI
+  parseDOI,
 };

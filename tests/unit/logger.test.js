@@ -1,5 +1,13 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { configure, createScopedLogger, LOG_LEVELS, debug, info, warn, error as logError } from '../../src/lib/logger';
+import {
+  configure,
+  createScopedLogger,
+  LOG_LEVELS,
+  debug,
+  info,
+  warn,
+  error as logError,
+} from '../../src/lib/logger';
 // Aliased 'error' to 'logError' to avoid conflict with any potential 'error' variables.
 
 // Helper to reset logger configuration to a known state before each test
@@ -39,8 +47,8 @@ describe('logger.js', () => {
   describe('LOG_LEVELS', () => {
     test('should have correct numeric values', () => {
       expect(LOG_LEVELS.DEBUG).toBe(0); // Uppercase
-      expect(LOG_LEVELS.INFO).toBe(1);  // Uppercase
-      expect(LOG_LEVELS.WARN).toBe(2);  // Uppercase
+      expect(LOG_LEVELS.INFO).toBe(1); // Uppercase
+      expect(LOG_LEVELS.WARN).toBe(2); // Uppercase
       expect(LOG_LEVELS.ERROR).toBe(3); // Uppercase
     });
   });
@@ -49,7 +57,9 @@ describe('logger.js', () => {
     test('should apply default configuration (implicitly tested by resetLoggerConfig)', () => {
       // resetLoggerConfig applies a known default set for testing
       info('Test message'); // Use imported 'info' directly
-      expect(consoleSpies.info).toHaveBeenCalledWith(expect.stringContaining('[INFO] Test message'));
+      expect(consoleSpies.info).toHaveBeenCalledWith(
+        expect.stringContaining('[INFO] Test message')
+      );
     });
 
     test('should override default configuration', () => {
@@ -79,7 +89,9 @@ describe('logger.js', () => {
 
       resetLoggerConfig(); // Resets to minLevel: LOG_LEVELS.INFO
       warn('This should be logged now'); // Use imported 'warn' directly
-      expect(consoleSpies.warn).toHaveBeenCalledWith(expect.stringContaining('[WARN] This should be logged now'));
+      expect(consoleSpies.warn).toHaveBeenCalledWith(
+        expect.stringContaining('[WARN] This should be logged now')
+      );
     });
   });
 
@@ -98,15 +110,20 @@ describe('logger.js', () => {
         test(`should log when minLevel is ${levelName} or lower`, () => {
           configure({ minLevel: numericLevel });
           fn(`Test ${levelName} message`);
-          expect(consoleSpies[consoleMethod]).toHaveBeenCalledWith(expect.stringContaining(`[${levelName.toUpperCase()}] Test ${levelName} message`));
+          expect(consoleSpies[consoleMethod]).toHaveBeenCalledWith(
+            expect.stringContaining(`[${levelName.toUpperCase()}] Test ${levelName} message`)
+          );
         });
 
         test('should not log when minLevel is higher', () => {
           const higherLevelValue = numericLevel + 1;
           // Find a level name for this higher value, if one exists
-          const higherLevelKey = Object.keys(LOG_LEVELS).find(k => LOG_LEVELS[k] === higherLevelValue);
+          const higherLevelKey = Object.keys(LOG_LEVELS).find(
+            (k) => LOG_LEVELS[k] === higherLevelValue
+          );
 
-          if (higherLevelKey) { // If a higher level exists
+          if (higherLevelKey) {
+            // If a higher level exists
             configure({ minLevel: higherLevelValue });
             fn(`Test ${levelName} message`);
             expect(consoleSpies[consoleMethod]).not.toHaveBeenCalled();
@@ -146,14 +163,18 @@ describe('logger.js', () => {
     test('should include context when configured', () => {
       configure({ includeContext: true, minLevel: LOG_LEVELS.INFO, timestamps: false }); // Explicitly set timestamps: false for stable check
       info('Message with context', { data: 'value' }); // Use imported 'info'
-      expect(consoleSpies.info).toHaveBeenCalledWith('[INFO] Message with context - {"data":"value"}');
+      expect(consoleSpies.info).toHaveBeenCalledWith(
+        '[INFO] Message with context - {"data":"value"}'
+      );
     });
 
     test('should exclude context when configured', () => {
       configure({ includeContext: false, minLevel: LOG_LEVELS.INFO, timestamps: false }); // Explicitly set timestamps: false
       info('Message without context', { data: 'value' }); // Use imported 'info'
       expect(consoleSpies.info).toHaveBeenCalledWith('[INFO] Message without context');
-      expect(consoleSpies.info).not.toHaveBeenCalledWith(expect.stringContaining('{"data":"value"}'));
+      expect(consoleSpies.info).not.toHaveBeenCalledWith(
+        expect.stringContaining('{"data":"value"}')
+      );
     });
 
     test('should handle context serialization errors gracefully', () => {
@@ -162,7 +183,11 @@ describe('logger.js', () => {
       circularContext.self = circularContext;
 
       info('Message with circular context', circularContext); // Use imported 'info'
-      expect(consoleSpies.info).toHaveBeenCalledWith(expect.stringContaining('[INFO] Message with circular context - [Context serialization error]'));
+      expect(consoleSpies.info).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '[INFO] Message with circular context - [Context serialization error]'
+        )
+      );
 
       // Also check console.warn was called for the serialization error itself
       // This assumes the logger uses its own 'warn' function for this internal warning.
@@ -191,24 +216,38 @@ describe('logger.js', () => {
     });
 
     const scopedTestCases = [
-      { levelName: 'debug', numericLevel: LOG_LEVELS.DEBUG, fnName: 'debug', consoleMethod: 'debug' },
+      {
+        levelName: 'debug',
+        numericLevel: LOG_LEVELS.DEBUG,
+        fnName: 'debug',
+        consoleMethod: 'debug',
+      },
       { levelName: 'info', numericLevel: LOG_LEVELS.INFO, fnName: 'info', consoleMethod: 'info' },
       { levelName: 'warn', numericLevel: LOG_LEVELS.WARN, fnName: 'warn', consoleMethod: 'warn' },
-      { levelName: 'error', numericLevel: LOG_LEVELS.ERROR, fnName: 'error', consoleMethod: 'error' },
+      {
+        levelName: 'error',
+        numericLevel: LOG_LEVELS.ERROR,
+        fnName: 'error',
+        consoleMethod: 'error',
+      },
     ];
 
     scopedTestCases.forEach(({ levelName, numericLevel, fnName, consoleMethod }) => {
       test(`scoped ${fnName}() should log with scope in context`, () => {
         scopedLogger[fnName](`Scoped ${levelName} message`);
         expect(consoleSpies[consoleMethod]).toHaveBeenCalledWith(
-          expect.stringContaining(`[${levelName.toUpperCase()}] Scoped ${levelName} message - {"scope":"${scopeName}"}`)
+          expect.stringContaining(
+            `[${levelName.toUpperCase()}] Scoped ${levelName} message - {"scope":"${scopeName}"}`
+          )
         );
       });
 
       test(`scoped ${fnName}() should merge scope with existing context`, () => {
         scopedLogger[fnName](`Scoped ${levelName} message with context`, { custom: 'data' });
         expect(consoleSpies[consoleMethod]).toHaveBeenCalledWith(
-          expect.stringContaining(`[${levelName.toUpperCase()}] Scoped ${levelName} message with context - {"custom":"data","scope":"${scopeName}"}`)
+          expect.stringContaining(
+            `[${levelName.toUpperCase()}] Scoped ${levelName} message with context - {"custom":"data","scope":"${scopeName}"}`
+          )
         );
       });
 
@@ -217,7 +256,8 @@ describe('logger.js', () => {
         if (numericLevel < LOG_LEVELS.ERROR) {
           scopedLogger[fnName](`Scoped ${levelName} message`);
           expect(consoleSpies[consoleMethod]).not.toHaveBeenCalled();
-        } else { // This will only be true for error level
+        } else {
+          // This will only be true for error level
           scopedLogger[fnName](`Scoped ${levelName} message`);
           expect(consoleSpies[consoleMethod]).toHaveBeenCalled();
         }
@@ -230,7 +270,11 @@ describe('logger.js', () => {
 
       scopedLogger.info('Scoped message with circular context', circularContext);
       // When context serialization fails, the scope is also lost in the output, as JSON.stringify on the merged object fails.
-      expect(consoleSpies.info).toHaveBeenCalledWith(expect.stringContaining(`[INFO] Scoped message with circular context - [Context serialization error]`));
+      expect(consoleSpies.info).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `[INFO] Scoped message with circular context - [Context serialization error]`
+        )
+      );
       // No separate console.warn for serialization error as per logger.js implementation
     });
   });
