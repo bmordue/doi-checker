@@ -35,11 +35,11 @@
     "prettier": "^3.6.2",
     "@stryker-mutator/core": "^9.1.1",
     "@stryker-mutator/vitest-runner": "^9.1.1",
-    "miniflare": "^4.20250829.0",
+    "miniflare": "^4.20260401.0",
     "rollup": "^4.60.0",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-string": "^3.0.0",
     "vitest": "^3.2.4",
-    "wrangler": "^4.59.1"
+    "wrangler": "^4.80.0"
   }
 }
